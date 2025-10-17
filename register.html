@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Registration</title>
+    
+    <style>
+        body { 
+            font-family: sans-serif; 
+            background-color: #f0f2f5; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh; 
+            margin: 0; 
+        }
+        .register-container { 
+            background: white; 
+            padding: 40px; 
+            border-radius: 10px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15); 
+            width: 350px; 
+            text-align: center; 
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 25px;
+            font-size: 24px;
+        }
+        input { 
+            width: 100%; 
+            padding: 12px; 
+            margin: 10px 0; 
+            border: 1px solid #ddd; 
+            border-radius: 6px; 
+            box-sizing: border-box; 
+            font-size: 16px;
+        }
+        button { 
+            background-color: #007bff; 
+            color: white; 
+            padding: 12px 20px; 
+            border: none; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            width: 100%; 
+            margin-top: 15px; 
+            font-size: 16px; 
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #999;
+            cursor: not-allowed;
+        }
+        .error-message { 
+            color: #dc3545; 
+            margin-top: 15px; 
+            font-weight: bold;
+        }
+        p {
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="register-container">
+        <h1>Register Account</h1>
+        <form id="registerForm">
+            <input type="text" id="name" placeholder="Full Name" required>
+            <input type="email" id="email" placeholder="Email Address" required>
+            <input type="tel" id="phone" placeholder="Phone Number" required>
+            <input type="password" id="password" placeholder="Password (min 6 characters)" required>
+            <input type="password" id="confirmPassword" placeholder="Confirm Password" required>
+            <button type="submit" id="registerButton">Register</button>
+        </form>
+        <p class="error-message" id="errorMessage"></p>
+        <p>Already have an account? <a href="login.html">Sign In</a></p>
+    </div>
+
+    <script type="module">
+        // Import Firebase core and services
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+
+        // ⚠️ 1. REPLACE THIS CONFIG WITH YOUR OWN FIREBASE PROJECT DETAILS!
+        const firebaseConfig = {
+  apiKey: "AIzaSyD73N_2NxY4_VQhy89khGKIgPVWuhSHw3Q",
+  authDomain: "mysa-77a83.firebaseapp.com",
+  projectId: "mysa-77a83",
+  storageBucket: "mysa-77a83.firebasestorage.app",
+  messagingSenderId: "199990845419",
+  appId: "1:199990845419:web:2f7feaee3c05854a4303ae",
+  measurementId: "G-0CE4KL8XE0"
+};
+
+        // 2. INITIALIZE FIREBASE APP AND SERVICES
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // 3. REGISTRATION FUNCTION (The logic from register.js is placed here for a single-file solution)
+        async function registerUser(auth, db, name, email, phone, password, confirmPassword) {
+            const errorMessageElement = document.getElementById('errorMessage');
+            const registerButton = document.getElementById('registerButton');
+            errorMessageElement.textContent = '';
+            
+            // Validation
+            if (password !== confirmPassword) {
+                errorMessageElement.textContent = 'Passwords do not match.';
+                return;
+            }
+            if (password.length < 6) {
+                errorMessageElement.textContent = 'Password must be at least 6 characters.';
+                return;
+            }
+
+            registerButton.disabled = true;
+            registerButton.textContent = 'Registering...';
+
+            try {
+                // A. Create user in Firebase Authentication
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+                
+                // B. Store additional data in Firestore
+                await setDoc(doc(db, "users", user.uid), {
+                    uid: user.uid,
+                    name: name,
+                    email: email,
+                    phone: phone,
+                    createdAt: new Date().toISOString()
+                });
+
+                console.log('User registered and data saved successfully.');
+                
+                // Success: Redirect to a dashboard or home page (assuming 'index.html' exists)
+                // window.location.href = 'index.html'; 
+                errorMessageElement.textContent = 'Registration Successful! Redirecting...';
+
+            } catch (error) {
+                console.error('Registration Error:', error);
+                
+                let message = error.message;
+
+                // Provide user-friendly error messages
+                if (error.code === 'auth/email-already-in-use') {
+                    message = 'This email is already registered.';
+                } else if (error.code === 'auth/invalid-email') {
+                    message = 'The email address is not valid.';
+                } else if (error.code === 'firestore/permission-denied') {
+                    message = 'Registration complete, but data save failed. Check your Firestore Security Rules!';
+                }
+                
+                errorMessageElement.textContent = message;
+
+            } finally {
+                registerButton.disabled = false;
+                registerButton.textContent = 'Register';
+            }
+        }
+        
+        // 4. Attach event listener to the form
+        document.getElementById('registerForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const phone = document.getElementById('phone').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            registerUser(auth, db, name, email, phone, password, confirmPassword);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mysa: AI Emotional Compass</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom Font */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f7f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .chat-container {
+            width: 100%;
+            max-width: 420px;
+            height: 80vh;
+            display: flex;
+            flex-direction: column;
+            background: white;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            border: 1px solid #e5e7eb;
+        }
+
+        #chat-window {
+            flex-grow: 1;
+            padding: 1rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            background-color: #fafafa;
+        }
+
+        /* Chat Message Styles */
+        .message {
+            max-width: 85%;
+            padding: 0.75rem 1rem;
+            border-radius: 1.5rem;
+            line-height: 1.4;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            word-wrap: break-word;
+        }
+
+        .user-message {
+            align-self: flex-end;
+            background-color: #6366f1; /* Indigo 500 */
+            color: white;
+            border-bottom-right-radius: 0.375rem; /* Small corner on the bottom-right */
+        }
+
+        .bot-message {
+            align-self: flex-start;
+            background-color: #eef2ff; /* Indigo 50 */
+            color: #1e293b; /* Slate 800 */
+            border-bottom-left-radius: 0.375rem; /* Small corner on the bottom-left */
+        }
+
+        /* Crisis Alert Box */
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
+        .crisis-alert {
+            background-color: #fee2e2; /* Red 100 */
+            border: 3px solid #ef4444; /* Red 500 */
+            color: #b91c1c; /* Red 700 */
+            padding: 1rem;
+            border-radius: 0.75rem;
+            animation: pulse 1.5s infinite;
+            font-weight: 600;
+        }
+
+        /* Typing Indicator (simplified) */
+        .typing-indicator {
+            align-self: flex-start;
+            background-color: #eef2ff;
+            color: #6366f1;
+            padding: 0.5rem 1rem;
+            border-radius: 1.5rem;
+            animation: fadein 0.5s;
+        }
+
+        @keyframes fadein {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Scrollbar Styling */
+        #chat-window::-webkit-scrollbar {
+            width: 8px;
+        }
+        #chat-window::-webkit-scrollbar-thumb {
+            background-color: #d1d5db;
+            border-radius: 4px;
+        }
+        #chat-window::-webkit-scrollbar-track {
+            background: #fafafa;
+        }
+
+        /* Input area styling */
+        #input-form {
+            display: flex;
+            padding: 1rem;
+            border-top: 1px solid #e5e7eb;
+            background-color: #ffffff;
+        }
+
+        #user-input {
+            flex-grow: 1;
+            padding: 0.75rem 1rem;
+            border: 1px solid #d1d5db;
+            border-radius: 9999px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        #user-input:focus {
+            border-color: #6366f1; /* Indigo 500 */
+        }
+
+        #send-button {
+            margin-left: 0.5rem;
+            background-color: #6366f1;
+            color: white;
+            border-radius: 9999px;
+            padding: 0.75rem;
+            transition: background-color 0.2s;
+        }
+
+        #send-button:hover {
+            background-color: #4f46e5; /* Indigo 600 */
+        }
+    </style>
+</head>
+<body>
+
+<div class="chat-container">
+    <!-- Header -->
+    <div class="p-4 bg-indigo-600 text-white rounded-t-2xl flex items-center justify-between shadow-lg">
+        <div class="flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2a10 10 0 0 0 10 10 4 4 0 0 1-4 4H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8z"/><path d="M8 7v6"/><path d="M16 11H9"/>
+            </svg>
+            <h1 class="text-xl font-bold">Mysa: Emotional Compass</h1>
+        </div>
+        <!-- Logout Button -->
+        <button id="logout-button" class="text-sm px-3 py-1 border border-white rounded-full hover:bg-white hover:text-indigo-600 transition duration-200">
+            Logout
+        </button>
+    </div>
+
+    <!-- Chat Window -->
+    <div id="chat-window">
+        <div id="auth-status" class="crisis-alert bg-yellow-100 border-yellow-500 text-yellow-800">
+            Checking authentication status...
+        </div>
+        <!-- Initial messages and history will be injected here by the script -->
+    </div>
+
+    <!-- Input Form -->
+    <form id="input-form">
+        <input type="text" id="user-input" placeholder="Share how you are feeling..." autocomplete="off" disabled>
+        <button type="submit" id="send-button" disabled>
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+        </button>
+    </form>
+</div>
+
+<!-- All application logic is now modularized within this single script block -->
+<script type="module">
+    // ========================================================================
+    // --- 1. FIREBASE SERVICE ---
+    // ========================================================================
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, setPersistence, inMemoryPersistence, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    // NOTE: Changed 'setDoc' to 'addDoc' for clearer intent of creating new messages
+    import { getFirestore, doc, addDoc, collection, query, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // Global instances for Firebase
+    let dbInstance = null;
+    let userIdInstance = null;
+    let authInstance = null;
+    
+    // MANDATORY Canvas environment variables
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+    
+    // Default config (will be overwritten by Canvas variables if available)
+    const FIREBASE_CONFIG = {
+       apiKey: "AIzaSyD73N_2NxY4_VQhy89khGKIgPVWuhSHw3Q",
+       authDomain: "mysa-77a83.firebaseapp.com",
+       projectId: "mysa-77a83",
+       storageBucket: "mysa-77a83.firebaseapp.com",
+       messagingSenderId: "199990845419",
+       appId: "1:199990845419:web:2f7feaee3c05854a4303ae",
+       measurementId: "G-0CE4KL8XE0"
+    };
+
+    /** Initializes Firebase and checks if the user is authenticated (not anonymous). */
+    async function initializeFirebase() {
+        const authStatusElement = document.getElementById('auth-status');
+        let firebaseConfig = FIREBASE_CONFIG;
+        
+        // Attempt to load config from Canvas environment
+        if (typeof __firebase_config !== 'undefined') {
+            try { firebaseConfig = JSON.parse(__firebase_config); } 
+            catch (e) { console.error("Could not parse __firebase_config, using hardcoded fallback."); }
+        }
+
+        try {
+            const app = initializeApp(firebaseConfig);
+            authInstance = getAuth(app);
+            dbInstance = getFirestore(app);
+            
+            // Set persistence to inMemory for iframe environments
+            await setPersistence(authInstance, inMemoryPersistence);
+
+            // Authentication using custom token if available
+            if (typeof __initial_auth_token !== 'undefined') {
+                await signInWithCustomToken(authInstance, __initial_auth_token);
+            }
+            
+            // Wait for auth state to be established
+            onAuthStateChanged(authInstance, (user) => {
+                const userInput = document.getElementById('user-input');
+                const sendButton = document.getElementById('send-button');
+
+                // Check if user exists AND is NOT anonymous (must be a proper login)
+                if (user && !user.isAnonymous) {
+                    // USER IS AUTHENTICATED
+                    userIdInstance = user.uid;
+                    authStatusElement.className = 'bot-message';
+                    authStatusElement.textContent = `Welcome back, User ${user.uid.substring(0, 8)}! Your chat history is linked to your account.`;
+                    
+                    userInput.disabled = false;
+                    sendButton.disabled = false;
+                    userInput.focus();
+                    
+                    // Proceed to set up chat listener and load history
+                    setupChatListener(dbInstance, userIdInstance, handleHistoryUpdate);
+                } else {
+                    // USER IS NOT AUTHENTICATED OR IS ANONYMOUS - Deny chat access
+                    console.log("User not logged in or is anonymous. Denying access.");
+                    
+                    authStatusElement.className = 'crisis-alert bg-red-100 border-red-500 text-red-800';
+                    authStatusElement.innerHTML = `
+                        <p class="font-bold">Access Denied</p>
+                        <p class="mt-1 text-sm">Please log in to access Mysa and save your chat history. (Assuming login.html exists)</p>
+                    `;
+                    
+                    // Note: In a real environment, you'd redirect here.
+                }
+            });
+
+        } catch (error) {
+            console.error("Firebase Initialization Failed:", error);
+            const authStatusElement = document.getElementById('auth-status');
+            authStatusElement.className = 'crisis-alert bg-red-100 border-red-500 text-red-800';
+            authStatusElement.innerHTML = `<p class="font-bold">Critical Error</p><p class="mt-1 text-sm">Failed to initialize Firebase services. Check console for details.</p>`;
+        }
+    }
+
+    /** Handles user logout and redirection. */
+    async function handleLogout() {
+        if (authInstance) {
+            try {
+                await signOut(authInstance);
+                // In a real app, this would redirect to a login page
+                console.log("Logged out successfully.");
+                // Update UI to reflect logged-out state (disabling input)
+                document.getElementById('user-input').disabled = true;
+                document.getElementById('send-button').disabled = true;
+            } catch (error) {
+                console.error("Logout Failed:", error);
+                const chatWindow = document.getElementById('chat-window');
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'crisis-alert bg-yellow-100 border-yellow-500 text-yellow-800';
+                errorDiv.textContent = 'Logout failed. Please try again.';
+                chatWindow.prepend(errorDiv);
+                setTimeout(() => errorDiv.remove(), 4000);
+            }
+        }
+    }
+
+    /** Sets up a real-time listener for the chat messages. */
+    function setupChatListener(db, userId, updateChatHistory) {
+        if (!db || !userId) return;
+
+        // Correct path for user-specific private data
+        const messagesRef = collection(db, "artifacts", appId, "users", userId, "chats");
+        const q = query(messagesRef);
+
+        onSnapshot(q, (snapshot) => {
+            let messages = [];
+            snapshot.forEach(doc => {
+                messages.push({ id: doc.id, ...doc.data() });
+            });
+
+            // Sort messages by timestamp
+            messages.sort((a, b) => {
+                const aTime = a.timestamp ? a.timestamp.toDate().getTime() : Infinity;
+                const bTime = b.timestamp ? b.timestamp.toDate().getTime() : Infinity;
+                return aTime - bTime;
+            });
+
+            updateChatHistory(messages);
+        }, (error) => {
+            console.error("Error listening to chat messages:", error);
+            const chatWindow = document.getElementById('chat-window');
+            // Display firestore rule error
+            if (!document.querySelector('.firestore-error-alert')) {
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'crisis-alert firestore-error-alert bg-red-100 border-red-500 text-red-800';
+                alertDiv.innerHTML = `<p class="font-bold">⚠️ Data Error: Permission Denied</p><p class="text-sm mt-1">Chat history is not loading. Check your Firestore Security Rules to allow access for logged-in users. (Path: /artifacts/${appId}/users/${userId}/chats)</p>`;
+                chatWindow.prepend(alertDiv);
+            }
+        });
+    }
+
+    /** Saves a new message to Firestore. */
+    async function saveMessage(db, userId, text, role, isCrisis = false) {
+        if (!db || !userId) {
+            console.warn("Database or User ID not available. Message not saved:", text);
+            return;
+        }
+        
+        // Use addDoc for generating a new document in the collection
+        const messagesRef = collection(db, "artifacts", appId, "users", userId, "chats");
+        
+        try {
+            await addDoc(messagesRef, {
+                text: text,
+                role: role,
+                isCrisis: isCrisis,
+                timestamp: serverTimestamp(),
+            });
+        } catch (error) {
+            console.error("Failed to save message to Firestore:", error);
+            // Non-alert UI error message
+            const chatWindow = document.getElementById('chat-window');
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'crisis-alert bg-yellow-100 border-yellow-500 text-yellow-800 text-sm';
+            errorDiv.textContent = 'Failed to save message due to a connection error.';
+            chatWindow.appendChild(errorDiv);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+            setTimeout(() => errorDiv.remove(), 4000);
+        }
+    }
+
+    // ========================================================================
+    // --- 2. GEMINI SERVICE ---
+    // ========================================================================
+    const API_KEY = "AIzaSyBAGIE2g6Qbw_uCd6ICQg0wn195d7SF--w"; // Use empty string for Canvas environment
+    const API_URL_BASE = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent`;
+    
+    const systemPrompt = "You are Mysa, an AI-powered Emotional Compass. Your goal is to provide empathetic, non-judgemental, and proactive mental health support. Always maintain a warm, supportive, and conversational tone. Your responses should be brief, validating, and encouraging. Focus on validating feelings and offering small, actionable coping strategies (like deep breaths, light stretching, or journaling prompts) after the initial validation. NEVER offer professional medical advice. After three turns, gently suggest checking their daily mood in a separate feature (not implemented here, but mention it to encourage external healthy habit tracking).";
+    const CRISIS_KEYWORDS = ['suicide', 'end it all', 'kill myself', 'hurt myself', 'want to die', 'harm myself'];
+
+    /** Handles the actual fetch request to the Gemini API with retry logic. */
+    async function fetchGeminiResponse(chatHistory, retries = 3) {
+        const payload = {
+            contents: chatHistory,
+            systemInstruction: { parts: [{ text: systemPrompt }] },
+        };
+
+        const apiUrl = `${API_URL_BASE}?key=${API_KEY}`; 
+
+        for (let i = 0; i < retries; i++) {
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (!response.ok) {
+                    const errorDetails = await response.json();
+                    console.error("API Error Details:", errorDetails);
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                
+                if (text) {
+                    return { text };
+                } else if (result.candidates?.[0]?.finishReason === 'SAFETY') {
+                    console.warn("Content blocked due to safety settings.");
+                    return { text: "I'm sorry, I cannot respond to that query due to safety guidelines. If this is a crisis, please use the resources listed above." };
+                } 
+                
+                throw new Error("Invalid or empty text response from Gemini API.");
+                
+            } catch (error) {
+                if (i < retries - 1) {
+                    console.warn(`Attempt ${i + 1} failed. Retrying...`);
+                    await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000));
+                }
+                else {
+                    throw error;
+                }
+            }
+        }
+    }
+
+
+    // ========================================================================
+    // --- 3. MAIN APPLICATION LOGIC ---
+    // ========================================================================
+    
+    // UI Elements
+    const chatForm = document.getElementById('input-form');
+    const chatWindow = document.getElementById('chat-window');
+    const userInput = document.getElementById('user-input');
+    const sendButton = document.getElementById('send-button');
+    const logoutButton = document.getElementById('logout-button');
+
+    // Application State
+    let currentChatHistory = [];
+
+    // --- Core Functions ---
+
+    /** Renders the chat messages to the UI. */
+    function renderChatHistory(messages) {
+        const authStatusElement = document.getElementById('auth-status');
+        const permanentAlert = chatWindow.querySelector('.firestore-error-alert');
+        
+        // Temporarily store elements that should persist across renders
+        const childrenToKeep = [];
+        if (authStatusElement && authStatusElement.parentElement === chatWindow) childrenToKeep.push(authStatusElement);
+        if (permanentAlert && permanentAlert.parentElement === chatWindow) childrenToKeep.push(permanentAlert);
+        
+        chatWindow.innerHTML = ''; 
+        childrenToKeep.forEach(child => chatWindow.appendChild(child));
+
+        // Add initial greeting if chat is empty
+        if (messages.length === 0 && !document.querySelector('.firestore-error-alert')) {
+             const greeting = document.createElement('div');
+             greeting.className = 'bot-message';
+             greeting.textContent = "Hi there! I'm Mysa. I'm here to listen without judgment. How are you feeling right now?";
+             chatWindow.appendChild(greeting);
+        }
+
+        messages.forEach(msg => {
+            if (msg.text) {
+                const isUser = msg.role === 'user';
+                const messageDiv = document.createElement('div');
+                
+                if (msg.isCrisis) {
+                    // Crisis Message Rendering
+                    messageDiv.className = 'crisis-alert';
+                    messageDiv.innerHTML = `
+                        <p class="mb-2 font-bold text-lg">⚠️ URGENT CRISIS ALERT ⚠️</p>
+                        <p class="text-base">${msg.text}</p>
+                        <p class="mt-3 text-sm">Please reach out immediately:</p>
+                        <ul class="list-disc list-inside ml-2 text-sm">
+                            <li>**India Suicide Prevention:** 9152987821</li>
+                            <li>**US National Suicide & Crisis:** 988</li>
+                        </ul>
+                    `;
+                } else {
+                    // Regular Message Rendering
+                    messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
+                    messageDiv.textContent = msg.text;
+                }
+                chatWindow.appendChild(messageDiv);
+            }
+        });
+
+        // Scroll to the latest message
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    /** Handles the update from the Firestore listener. */
+    function handleHistoryUpdate(messages) {
+        // Remove the initial authentication status message after history loads
+        const authStatusElement = document.getElementById('auth-status');
+        if (authStatusElement && authStatusElement.parentElement === chatWindow) {
+             chatWindow.removeChild(authStatusElement);
+        }
+        
+        // 1. Update the local chatHistory array for the AI service
+        // The array is already sorted by the listener
+        currentChatHistory = messages
+            .filter(msg => msg.text) // Filter out messages without text
+            .map(msg => ({ 
+                role: msg.role === 'bot' ? 'model' : 'user', 
+                parts: [{ text: msg.text }] 
+            }));
+            
+        // 2. Render the updated list to the UI
+        renderChatHistory(messages);
+    }
+
+    /** Main function to send a user message and get a bot response. */
+    async function sendMessage(text) {
+        const trimmedText = text.trim();
+        if (!trimmedText) return;
+        if (!dbInstance || !userIdInstance) {
+            // Error fallback: should be prevented by initialization
+            const tempAlert = document.createElement('div');
+            tempAlert.className = 'crisis-alert bg-yellow-100 border-yellow-500 text-yellow-800 text-sm';
+            tempAlert.textContent = "Please log in to use the chatbot and save your history.";
+            chatWindow.appendChild(tempAlert);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+            setTimeout(() => tempAlert.remove(), 3000);
+            return;
+        }
+        
+        userInput.value = ''; // Clear input immediately
+
+        // 1. Check for Crisis Keywords
+        const isCrisis = CRISIS_KEYWORDS.some(keyword => trimmedText.toLowerCase().includes(keyword));
+
+        // 2. Save user message to DB
+        await saveMessage(dbInstance, userIdInstance, trimmedText, 'user', false);
+        
+        // Disable input while API is busy
+        userInput.disabled = true;
+        sendButton.disabled = true;
+
+        // 3. Handle Crisis Detection
+        if (isCrisis) {
+            const crisisText = `It sounds like you are going through immense pain right now, and I want you to know that help is available. Please reach out to the resources below immediately. You do not have to go through this alone.`;
+            // Save the automated crisis response to the chat history
+            await saveMessage(dbInstance, userIdInstance, crisisText, 'bot', true);
+            userInput.disabled = false;
+            sendButton.disabled = false;
+            userInput.focus();
+            return;
+        }
+
+        // 4. Show typing indicator
+        const typingIndicator = document.createElement('div');
+        typingIndicator.className = 'typing-indicator';
+        typingIndicator.textContent = 'Mysa is typing...';
+        chatWindow.appendChild(typingIndicator);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+
+        try {
+            // 5. Fetch AI response using the current, synchronized history
+            // We pass the entire history including the user's latest message (which was just saved and loaded by onSnapshot)
+            const response = await fetchGeminiResponse(currentChatHistory);
+
+            // 6. Remove typing indicator
+            if (chatWindow.contains(typingIndicator)) {
+                chatWindow.removeChild(typingIndicator);
+            }
+
+            // 7. Save bot response to DB
+            await saveMessage(dbInstance, userIdInstance, response.text, 'bot', false);
+
+        } catch (error) {
+            console.error("Chat Error:", error);
+            if (chatWindow.contains(typingIndicator)) {
+                chatWindow.removeChild(typingIndicator);
+            }
+            // Display a non-crashing error message and save it
+            const errorMsg = `Sorry, I hit an internal error. Please check the browser console (F12) for detailed error information, then try refreshing or rephrasing your question.`;
+            await saveMessage(dbInstance, userIdInstance, errorMsg, 'bot', false);
+        } finally {
+            // 8. Re-enable input
+            userInput.disabled = false;
+            sendButton.disabled = false;
+            userInput.focus();
+        }
+    }
+
+
+    // --- Initialization and Event Listeners ---
+
+    // 1. Start the Firebase connection process
+    initializeFirebase();
+    
+    // 2. Attach form submission listener
+    chatForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const text = userInput.value;
+        sendMessage(text);
+    });
+
+    // 3. Attach logout listener
+    logoutButton.addEventListener('click', handleLogout);
+
+</script>
+</body>
+</html>

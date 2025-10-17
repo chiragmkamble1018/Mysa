@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calm Path Word Labyrinth</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0fdf4; /* Softest green/mint */
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .word-tile {
+            display: inline-block;
+            padding: 10px 15px;
+            margin: 8px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        .word-tile:hover:not(.selected) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+        .step-0 { background-color: #a7f3d0; color: #065f46; } /* Light Green - Subject */
+        .step-1 { background-color: #d1fae5; color: #065f46; } /* Lighter Green - Action */
+        .step-2 { background-color: #6ee7b7; color: #047857; } /* Medium Green - Outcome */
+        .selected { 
+            opacity: 0.5; 
+            pointer-events: none;
+            box-shadow: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="z-10 max-w-2xl w-full text-center bg-white p-6 rounded-xl shadow-2xl">
+        <h1 class="text-3xl font-extrabold text-teal-600 mb-2">Calm Path Word Labyrinth</h1>
+        <p class="text-gray-500 mb-6">Build a positive, affirming statement by clicking the words in order: <span class="font-bold text-teal-700">Subject → Action → Outcome.</span></p>
+
+        <!-- Current Sentence Display -->
+        <div id="current-sentence" class="text-3xl font-serif italic text-gray-800 p-4 border-b-2 border-teal-300 min-h-[50px] mb-8">
+            Start by choosing your Subject...
+        </div>
+
+        <!-- Word Selection Tray -->
+        <div id="word-tray" class="flex flex-wrap justify-center p-4 border border-teal-200 rounded-lg bg-teal-50">
+            <!-- Words will be dynamically loaded here -->
+        </div>
+
+        <button id="next-btn" class="mt-6 px-6 py-3 bg-teal-500 text-white font-bold rounded-full hover:bg-teal-600 transition duration-150 hidden">
+            Build New Path
+        </button>
+    </div>
+
+    <script type="module">
+        // Word groups for building positive sentences
+        const WORD_GROUPS = [
+            // Step 0: Subject/Focus
+            ["I", "My Mind", "This Moment", "My Body", "I can"],
+            // Step 1: Action/Verb
+            ["is calming", "will find", "can choose", "deserves to", "is letting go of"],
+            // Step 2: Outcome/Goal
+            ["peace.", "strength.", "clarity.", "rest.", "positivity.", "ease.", "calmness."]
+        ];
+        
+        const currentSentenceEl = document.getElementById('current-sentence');
+        const wordTrayEl = document.getElementById('word-tray');
+        const nextBtn = document.getElementById('next-btn');
+
+        let currentStep = 0;
+        let sentence = [];
+        let tiles = []; // Holds references to the generated tile elements
+
+        // --- GAME LOGIC ---
+
+        function startGame() {
+            currentStep = 0;
+            sentence = [];
+            currentSentenceEl.textContent = 'Start by choosing your Subject...';
+            nextBtn.classList.add('hidden');
+            renderTiles();
+        }
+
+        function renderTiles() {
+            wordTrayEl.innerHTML = '';
+            const words = WORD_GROUPS[currentStep];
+
+            // Use a seeded shuffle for words within the group for visual change
+            const shuffledWords = [...words].sort(() => Math.random() - 0.5);
+
+            shuffledWords.forEach((word, index) => {
+                const tile = document.createElement('div');
+                tile.classList.add('word-tile', step-${currentStep});
+                tile.textContent = word;
+                tile.dataset.word = word;
+                tile.dataset.step = currentStep;
+                
+                tile.addEventListener('click', handleTileClick);
+                wordTrayEl.appendChild(tile);
+            });
+        }
+
+        function handleTileClick(e) {
+            const tile = e.currentTarget;
+            const word = tile.dataset.word;
+            const step = parseInt(tile.dataset.step);
+
+            if (step !== currentStep) {
+                // Ignore clicks on words not for the current step
+                tile.style.border = '2px solid red';
+                setTimeout(() => tile.style.border = 'none', 500);
+                return;
+            }
+
+            // 1. Update the sentence
+            sentence.push(word);
+            currentSentenceEl.textContent = sentence.join(' ');
+            
+            // 2. Mark the selected word as used
+            tile.classList.add('selected');
+            
+            // 3. Advance the step
+            currentStep++;
+
+            // 4. Check for completion or move to next step
+            if (currentStep < WORD_GROUPS.length) {
+                // Move to the next set of words
+                renderTiles();
+                // Update prompt
+                if (currentStep === 1) currentSentenceEl.textContent += ' (Choose your Action...)';
+                if (currentStep === 2) currentSentenceEl.textContent += ' (Choose your Outcome...)';
+            } else {
+                // Game complete
+                currentSentenceEl.textContent = sentence.join(' ') + ".";
+                currentSentenceEl.classList.add('text-teal-600', 'font-bold');
+                wordTrayEl.innerHTML = <span class="text-xl font-semibold text-teal-700">A positive statement has been formed!</span>;
+                nextBtn.classList.remove('hidden');
+            }
+        }
+
+        // --- INITIALIZATION ---
+        nextBtn.addEventListener('click', () => {
+            currentSentenceEl.classList.remove('text-teal-600', 'font-bold');
+            startGame();
+        });
+        startGame();
+    </script>
+</body>
+</html>
