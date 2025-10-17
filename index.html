@@ -15,17 +15,20 @@
                         'poppins': ['Poppins', 'sans-serif'],
                     },
                     colors: {
-                        'lavender-mist': '#C8B6FF',
-                        'mint-green': '#B8E4C9',
-                        'soft-cream': '#FFF9F3',
+                        // NEW COLOR PALETTE: Sunset Glow 🌅
+                        'soft-coral': '#FFC2A4', // Main Primary Accent
+                        'burnt-sienna': '#C75C3E', // Dark Accent / Primary CTA
+                        'deep-taupe': '#453C3C', // Primary Text & Dark Background
+                        'pale-sand': '#FFF8F3', // Main Background
+                        'cream-mist': '#FBF3E6', // Secondary Background/Card Fill
                         'warm-white': '#FFFFFF',
-                        'deep-lilac': '#7E60BF',
-                        'sky-blue': '#A8D8FF',
-                        'peach-blush': '#F7C8C8',
-                        'sage-gray': '#A9B2AC',
-                        'charcoal-gray': '#333333',
-                        'soft-gray': '#666666',
-                        'light-gray': '#E5E5E5',
+                        'light-sand': '#F0EBE3', // Lighter details
+                        'soft-gray-text': '#888888', // Secondary text
+                        'crisis-red': '#E53935', // Crisis Accent
+                        'accent-gold': '#F4C777', // Interactive Hover Accent
+                    },
+                    boxShadow: {
+                        'soft': '0 4px 15px rgba(69, 60, 60, 0.15)', // Based on deep-taupe
                     }
                 }
             }
@@ -38,8 +41,8 @@
         
         .fade-in {
             opacity: 0;
-            transform: translateY(30px);
-            transition: all 0.8s ease-out;
+            transform: translateY(20px);
+            transition: all 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Soft, springy transition */
         }
         
         .fade-in.visible {
@@ -48,17 +51,19 @@
         }
         
         .gradient-bg {
-            background: linear-gradient(135deg, #C8B6FF, #B8E4C9);
+            /* Updated to new palette: Soft Coral to Cream Mist */
+            background: linear-gradient(135deg, #FFC2A4, #FBF3E6); 
+            min-height: calc(100vh - 64px); 
         }
         
         .chat-bubble {
-            animation: slideIn 0.5s ease-out;
+            animation: slideIn 0.5s cubic-bezier(0.23, 1, 0.320, 1);
         }
         
         @keyframes slideIn {
             from {
                 opacity: 0;
-                transform: translateX(-20px);
+                transform: translateX(-15px);
             }
             to {
                 opacity: 1;
@@ -67,11 +72,13 @@
         }
         
         .mood-chart {
-            background: linear-gradient(120deg, #A8D8FF, #F7C8C8);
-            border-radius: 8px;
+            /* Updated chart gradient: Soft Coral to Light Sand */
+            background: linear-gradient(120deg, #FFC2A4, #F0EBE3); 
+            border-radius: 12px;
             height: 120px;
             position: relative;
             overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
         
         .mood-line {
@@ -80,17 +87,24 @@
             left: 10%;
             right: 10%;
             height: 2px;
-            background: white;
+            background: #453C3C; /* Deep Taupe line for contrast */
             border-radius: 2px;
+            opacity: 0.6;
         }
         
         .mood-point {
             position: absolute;
-            width: 8px;
-            height: 8px;
-            background: white;
+            width: 10px;
+            height: 10px;
+            background: #C75C3E; /* Burnt Sienna dot */
+            border: 2px solid white;
             border-radius: 50%;
             bottom: 18px;
+            transition: transform 0.3s ease-out;
+        }
+
+        .mood-point:hover {
+            transform: scale(1.3);
         }
         
         .floating {
@@ -99,75 +113,103 @@
         
         @keyframes float {
             0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
+            50% { transform: translateY(-8px); }
+        }
+
+        /* Mobile Menu styles */
+        #mobile-menu {
+            transition: transform 0.3s ease-in-out;
+            transform: translateX(100%);
+        }
+        #mobile-menu.open {
+            transform: translateX(0);
         }
     </style>
 </head>
-<body class="font-poppins bg-soft-cream min-h-full">
-    <!-- Navigation -->
-    <nav class="fixed top-0 w-full bg-white/80 backdrop-blur-md z-50 border-b border-gray-200/50">
+<body class="font-poppins bg-pale-sand min-h-full">
+    <nav class="fixed top-0 w-full bg-white/90 backdrop-blur-sm z-50 border-b border-light-sand/70 shadow-sm">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
                 <div class="flex items-center space-x-2">
-                    <div class="w-8 h-8 bg-gradient-to-r from-deep-lilac to-mint-green rounded-full flex items-center justify-center">
+                    <div class="w-8 h-8 bg-gradient-to-r from-burnt-sienna to-soft-coral rounded-full flex items-center justify-center shadow-md">
                         <i class="fas fa-heart text-white text-sm"></i>
                     </div>
-                    <span class="text-xl font-semibold text-gray-800">Mysa</span>
+                    <span class="text-xl font-bold text-deep-taupe">Mysa</span>
                 </div>
                 <div class="hidden md:flex space-x-8 items-center">
-                    <a href="diary.html" class="text-sage-gray hover:text-deep-lilac transition-colors">My Diary</a>
+                    <a href="diary.html" class="text-soft-gray-text hover:text-burnt-sienna font-medium transition-colors">My Diary</a>
 
-                    <!-- Games Dropdown -->
                     <div class="relative group">
-                        <button class="flex items-center text-sage-gray hover:text-deep-lilac transition-colors focus:outline-none">
+                        <button class="flex items-center text-soft-gray-text hover:text-burnt-sienna font-medium transition-colors focus:outline-none">
                             <span>Games</span>
                             <i class="fas fa-caret-down ml-2 text-sm"></i>
                         </button>
-                        <div class="absolute left-0 mt-2 w-56 bg-white rounded-lg shadow-lg opacity-0 group-hover:opacity-100 invisible group-hover:visible transform scale-95 group-hover:scale-100 transition-all duration-150 origin-top">
+                        <div class="absolute left-1/2 -translate-x-1/2 mt-2 w-56 bg-white rounded-xl shadow-xl border border-light-sand/70 opacity-0 group-hover:opacity-100 invisible group-hover:visible transform scale-95 group-hover:scale-100 transition-all duration-150 origin-top z-40">
                             <ul class="py-2">
-                                <li><a href="games/breathing_game.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Breathing Game</a></li>
-                                <li><a href="games/calm_path_librinth.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Calm Path Labyrinth</a></li>
-                                <li><a href="games/rain_soundscape.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Rain Soundscape</a></li>
-                                <li><a href="games/satisfying_pop_game.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Satisfying Pop Game</a></li>
+                                <li><a href="games/breathing_game.html" class="block px-4 py-2 text-sm text-deep-taupe hover:bg-light-sand/70 transition-colors">Breathing Game</a></li>
+                                <li><a href="games/calm_path_librinth.html" class="block px-4 py-2 text-sm text-deep-taupe hover:bg-light-sand/70 transition-colors">Calm Path Labyrinth</a></li>
+                                <li><a href="games/rain_soundscape.html" class="block px-4 py-2 text-sm text-deep-taupe hover:bg-light-sand/70 transition-colors">Rain Soundscape</a></li>
+                                <li><a href="games/satisfying_pop_game.html" class="block px-4 py-2 text-sm text-deep-taupe hover:bg-light-sand/70 transition-colors">Satisfying Pop Game</a></li>
                             </ul>
                         </div>
                     </div>
 
-                    <a href="#about" class="text-sage-gray hover:text-deep-lilac transition-colors">About</a>
-                    <a href="#features" class="text-sage-gray hover:text-deep-lilac transition-colors">Features</a>
-                    <a href="#resources" class="text-sage-gray hover:text-deep-lilac transition-colors">Resources</a>
-                    <!-- Authentication Link is Dynamic -->
-                    <a href="login.html" class="text-sage-gray hover:text-deep-lilac transition-colors" id="nav-auth-link">Login/Signup</a>
+                    <a href="#about" class="text-soft-gray-text hover:text-burnt-sienna font-medium transition-colors">About</a>
+                    <a href="#features" class="text-soft-gray-text hover:text-burnt-sienna font-medium transition-colors">Features</a>
+                    <a href="#resources" class="text-soft-gray-text hover:text-burnt-sienna font-medium transition-colors">Resources</a>
+                    <a href="login.html" class="text-burnt-sienna hover:text-deep-taupe transition-colors font-semibold" id="nav-auth-link">Login/Signup</a>
                 </div>
                 
-                <button class="md:hidden">
-                    <i class="fas fa-bars text-gray-600"></i>
+                <button id="mobile-menu-button" class="md:hidden p-2 rounded-lg text-deep-taupe hover:bg-light-sand transition-colors">
+                    <i class="fas fa-bars text-xl"></i>
                 </button>
             </div>
         </div>
     </nav>
+    
+    <div id="mobile-menu" class="fixed top-0 right-0 h-full w-64 bg-white shadow-2xl z-50 pt-16">
+        <div class="flex justify-end p-4">
+            <button id="close-mobile-menu" class="text-deep-taupe hover:text-burnt-sienna">
+                <i class="fas fa-times text-2xl"></i>
+            </button>
+        </div>
+        <ul class="flex flex-col space-y-4 px-6">
+            <li><a href="diary.html" class="block text-lg text-deep-taupe hover:text-burnt-sienna py-2 transition-colors border-b border-light-sand">My Diary</a></li>
+            <li>
+                <span class="block text-lg text-deep-taupe py-2">Games</span>
+                <ul class="ml-4 space-y-1">
+                    <li><a href="games/breathing_game.html" class="block text-soft-gray-text hover:text-soft-coral text-base">Breathing Game</a></li>
+                    <li><a href="games/calm_path_librinth.html" class="block text-soft-gray-text hover:text-soft-coral text-base">Calm Path Labyrinth</a></li>
+                    <li><a href="games/rain_soundscape.html" class="block text-soft-gray-text hover:text-soft-coral text-base">Rain Soundscape</a></li>
+                    <li><a href="games/satisfying_pop_game.html" class="block text-soft-gray-text hover:text-soft-coral text-base">Satisfying Pop Game</a></li>
+                </ul>
+            </li>
+            <li><a href="#about" class="block text-lg text-deep-taupe hover:text-burnt-sienna py-2 transition-colors border-b border-light-sand">About</a></li>
+            <li><a href="#features" class="block text-lg text-deep-taupe hover:text-burnt-sienna py-2 transition-colors border-b border-light-sand">Features</a></li>
+            <li><a href="#resources" class="block text-lg text-deep-taupe hover:text-burnt-sienna py-2 transition-colors border-b border-light-sand">Resources</a></li>
+            <li><a href="login.html" class="block text-lg text-burnt-sienna font-semibold py-2 mt-4" id="mobile-nav-auth-link">Login/Signup</a></li>
+        </ul>
+    </div>
 
-    <!-- Hero Section -->
-    <section class="gradient-bg min-h-full flex items-center justify-center pt-16">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-            <div class="text-center fade-in">
-                <div class="floating mb-8">
-                    <div class="w-20 h-20 bg-white/40 rounded-full flex items-center justify-center mx-auto backdrop-blur-sm shadow-lg">
-                        <i class="fas fa-brain text-4xl text-deep-lilac"></i>
+
+    <section class="gradient-bg flex items-center justify-center pt-24 pb-20 md:pb-32">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center fade-in max-w-4xl mx-auto">
+                <div class="floating mb-6">
+                    <div class="w-20 h-20 bg-white/50 rounded-full flex items-center justify-center mx-auto backdrop-blur-sm shadow-xl">
+                        <i class="fas fa-brain text-4xl text-burnt-sienna"></i>
                     </div>
                 </div>
-                <h1 class="text-4xl md:text-6xl font-bold text-charcoal-gray mb-6 leading-tight">
+                <h1 class="text-4xl md:text-6xl font-extrabold text-deep-taupe mb-6 leading-snug md:leading-tight">
                     Your AI Mental Health
-                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-deep-lilac to-mint-green">
+                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-burnt-sienna to-soft-coral">
                         Companion
                     </span>
                 </h1>
-                <p class="text-xl text-gray-600 mb-8 max-w-2xl mx-auto leading-relaxed">
-                    A safe space to share your thoughts, track your mood, and find support whenever you need it. 
-                    Available 24/7 with empathy and understanding.
+                <p class="text-xl text-soft-gray-text mb-10 max-w-3xl mx-auto leading-relaxed">
+                    A safe, non-judgemental space to share your thoughts, track your mood, and find personalized support whenever you need it.
                 </p>
-                <!-- Start Chatting Button is Dynamic -->
-                <button id="start-chat-button" class="bg-gradient-to-r from-deep-lilac to-mint-green text-white px-8 py-4 rounded-full text-lg font-medium hover:shadow-xl hover:scale-105 hover:opacity-90 transition-all duration-300">
+                <button id="start-chat-button" class="bg-gradient-to-r from-burnt-sienna to-soft-coral text-white px-10 py-4 rounded-xl text-xl font-bold hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 shadow-lg">
                     <i class="fas fa-comments mr-2"></i>
                     Start Chatting (Loading...)
                 </button>
@@ -175,173 +217,169 @@
         </div>
     </section>
 
-    <!-- About Section -->
     <section id="about" class="py-20 bg-warm-white">
-        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center fade-in">
-                <h2 class="text-3xl md:text-4xl font-bold text-charcoal-gray mb-8">
+                <h2 class="text-3xl md:text-4xl font-bold text-deep-taupe mb-8">
                     Supporting Your Emotional Well-being
                 </h2>
-                <p class="text-lg text-soft-gray leading-relaxed mb-8">
+                <p class="text-lg text-soft-gray-text leading-relaxed mb-12 max-w-4xl mx-auto">
                     Mysa uses advanced AI to provide compassionate, personalized support for your mental health journey. 
-                    Through meaningful conversations, mood tracking, and evidence-based coping strategies, we're here to 
-                    help you navigate life's challenges with confidence and resilience.
+                    We leverage meaningful conversations, mood tracking, and evidence-based coping strategies to help you navigate life's challenges with confidence.
                 </p>
-                <div class="grid md:grid-cols-3 gap-8 mt-12">
-                    <div class="text-center">
-                        <div class="w-16 h-16 bg-gradient-to-r from-sky-blue to-deep-lilac rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                <div class="grid md:grid-cols-3 gap-10 mt-12">
+                    <div class="text-center p-6 bg-cream-mist rounded-xl shadow-soft fade-in hover:shadow-lg transition-shadow">
+                        <div class="w-16 h-16 bg-gradient-to-r from-soft-coral to-burnt-sienna rounded-full flex items-center justify-center mx-auto mb-4 shadow-md">
                             <i class="fas fa-shield-alt text-white text-xl"></i>
                         </div>
-                        <h3 class="font-semibold text-charcoal-gray mb-2">Private & Secure</h3>
-                        <p class="text-sage-gray text-sm">Your conversations are encrypted and completely confidential</p>
+                        <h3 class="font-semibold text-xl text-deep-taupe mb-2">Private & Secure</h3>
+                        <p class="text-soft-gray-text text-base">Your data and conversations are protected with end-to-end encryption and strict confidentiality protocols.</p>
                     </div>
-                    <div class="text-center">
-                        <div class="w-16 h-16 bg-gradient-to-r from-mint-green to-deep-lilac rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                    <div class="text-center p-6 bg-cream-mist rounded-xl shadow-soft fade-in hover:shadow-lg transition-shadow" style="transition-delay: 0.1s;">
+                        <div class="w-16 h-16 bg-gradient-to-r from-burnt-sienna to-soft-coral rounded-full flex items-center justify-center mx-auto mb-4 shadow-md">
                             <i class="fas fa-clock text-white text-xl"></i>
                         </div>
-                        <h3 class="font-semibold text-charcoal-gray mb-2">24/7 Available</h3>
-                        <p class="text-sage-gray text-sm">Support whenever you need it, day or night</p>
+                        <h3 class="font-semibold text-xl text-deep-taupe mb-2">24/7 Available</h3>
+                        <p class="text-soft-gray-text text-base">Receive instant support whenever you need it, day or night, without the wait.</p>
                     </div>
-                    <div class="text-center">
-                        <div class="w-16 h-16 bg-gradient-to-r from-peach-blush to-lavender-mist rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                    <div class="text-center p-6 bg-cream-mist rounded-xl shadow-soft fade-in hover:shadow-lg transition-shadow" style="transition-delay: 0.2s;">
+                        <div class="w-16 h-16 bg-gradient-to-r from-soft-coral to-burnt-sienna rounded-full flex items-center justify-center mx-auto mb-4 shadow-md">
                             <i class="fas fa-heart text-white text-xl"></i>
                         </div>
-                        <h3 class="font-semibold text-charcoal-gray mb-2">Empathetic AI</h3>
-                        <p class="text-sage-gray text-sm">Trained to understand and respond with genuine care</p>
+                        <h3 class="font-semibold text-xl text-deep-taupe mb-2">Empathetic AI</h3>
+                        <p class="text-soft-gray-text text-base">Trained on psychological principles to understand and respond with genuine, compassionate care.</p>
                     </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Core Features Section -->
-    <section id="features" class="py-20 bg-gradient-to-r from-lavender-mist/20 to-sky-blue/20">
+    <section id="features" class="py-20 bg-gradient-to-r from-soft-coral/20 to-light-sand/20">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-16 fade-in">
-                <h2 class="text-3xl md:text-4xl font-bold text-charcoal-gray mb-4">
+                <h2 class="text-3xl md:text-4xl font-bold text-deep-taupe mb-4">
                     Comprehensive Mental Health Support
                 </h2>
-                <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+                <p class="text-lg text-soft-gray-text max-w-2xl mx-auto">
                     Everything you need to maintain and improve your mental well-being in one place
                 </p>
             </div>
             
             <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                <div class="bg-warm-white/90 backdrop-blur-sm rounded-2xl p-6 hover:shadow-xl hover:bg-warm-white transition-all duration-300 fade-in border border-light-gray/30">
-                    <div class="w-12 h-12 bg-gradient-to-r from-deep-lilac to-lavender-mist rounded-xl flex items-center justify-center mb-4 shadow-md">
-                        <i class="fas fa-robot text-white"></i>
+                <div class="bg-warm-white rounded-xl p-8 hover:shadow-xl transition-all duration-300 fade-in border border-light-sand/70 hover:border-burnt-sienna/30">
+                    <div class="w-12 h-12 bg-gradient-to-r from-burnt-sienna to-soft-coral rounded-lg flex items-center justify-center mb-4 shadow-md">
+                        <i class="fas fa-robot text-white text-xl"></i>
                     </div>
-                    <h3 class="text-xl font-semibold text-charcoal-gray mb-3">AI-Powered Chatbot</h3>
-                    <p class="text-sage-gray">Engage in meaningful conversations with our empathetic AI that understands your emotions and provides personalized support.</p>
+                    <h3 class="text-xl font-semibold text-deep-taupe mb-3">AI-Powered Chatbot</h3>
+                    <p class="text-soft-gray-text">Engage in meaningful conversations with our empathetic AI that understands your emotions and provides personalized support.</p>
                 </div>
                 
-                <div class="bg-warm-white/90 backdrop-blur-sm rounded-2xl p-6 hover:shadow-xl hover:bg-warm-white transition-all duration-300 fade-in border border-light-gray/30">
-                    <div class="w-12 h-12 bg-gradient-to-r from-mint-green to-sky-blue rounded-xl flex items-center justify-center mb-4 shadow-md">
-                        <i class="fas fa-chart-line text-white"></i>
+                <div class="bg-warm-white rounded-xl p-8 hover:shadow-xl transition-all duration-300 fade-in border border-light-sand/70 hover:border-soft-coral/30" style="transition-delay: 0.1s;">
+                    <div class="w-12 h-12 bg-gradient-to-r from-soft-coral to-burnt-sienna rounded-lg flex items-center justify-center mb-4 shadow-md">
+                        <i class="fas fa-chart-line text-white text-xl"></i>
                     </div>
-                    <h3 class="text-xl font-semibold text-charcoal-gray mb-3">Mood Tracking & Visualization</h3>
-                    <p class="text-sage-gray">Monitor your emotional patterns with beautiful charts and insights to better understand your mental health journey.</p>
+                    <h3 class="text-xl font-semibold text-deep-taupe mb-3">Mood Tracking & Visualization</h3>
+                    <p class="text-soft-gray-text">Monitor your emotional patterns with beautiful charts and insights to better understand and manage your mental health journey.</p>
                 </div>
                 
-                <div class="bg-warm-white/90 backdrop-blur-sm rounded-2xl p-6 hover:shadow-xl hover:bg-warm-white transition-all duration-300 fade-in border border-light-gray/30">
-                    <div class="w-12 h-12 bg-gradient-to-r from-sky-blue to-peach-blush rounded-xl flex items-center justify-center mb-4 shadow-md">
-                        <i class="fas fa-tools text-white"></i>
+                <div class="bg-warm-white rounded-xl p-8 hover:shadow-xl transition-all duration-300 fade-in border border-light-sand/70 hover:border-accent-gold/30" style="transition-delay: 0.2s;">
+                    <div class="w-12 h-12 bg-gradient-to-r from-accent-gold to-burnt-sienna rounded-lg flex items-center justify-center mb-4 shadow-md">
+                        <i class="fas fa-tools text-white text-xl"></i>
                     </div>
-                    <h3 class="text-xl font-semibold text-charcoal-gray mb-3">Coping Tools & Exercises</h3>
-                    <p class="text-sage-gray">Access guided breathing exercises, meditation sessions, and evidence-based coping strategies.</p>
+                    <h3 class="text-xl font-semibold text-deep-taupe mb-3">Coping Tools & Exercises</h3>
+                    <p class="text-soft-gray-text">Access guided breathing exercises, meditation sessions, and evidence-based coping strategies readily available.</p>
                 </div>
                 
-                <div class="bg-warm-white/90 backdrop-blur-sm rounded-2xl p-6 hover:shadow-xl hover:bg-warm-white transition-all duration-300 fade-in border border-light-gray/30">
-                    <div class="w-12 h-12 bg-gradient-to-r from-peach-blush to-deep-lilac rounded-xl flex items-center justify-center mb-4 shadow-md">
-                        <i class="fas fa-exclamation-triangle text-white"></i>
+                <div class="bg-warm-white rounded-xl p-8 hover:shadow-xl transition-all duration-300 fade-in border border-light-sand/70 hover:border-crisis-red/30" style="transition-delay: 0.3s;">
+                    <div class="w-12 h-12 bg-gradient-to-r from-crisis-red to-burnt-sienna rounded-lg flex items-center justify-center mb-4 shadow-md">
+                        <i class="fas fa-exclamation-triangle text-white text-xl"></i>
                     </div>
-                    <h3 class="text-xl font-semibold text-charcoal-gray mb-3">Crisis Detection & Support</h3>
-                    <p class="text-sage-gray">Advanced AI monitors for signs of crisis and immediately connects you with appropriate resources and support.</p>
+                    <h3 class="text-xl font-semibold text-deep-taupe mb-3">Crisis Detection & Support</h3>
+                    <p class="text-soft-gray-text">Advanced AI monitors for signs of crisis and immediately connects you with appropriate, localized resources and support.</p>
                 </div>
                 
-                <div class="bg-warm-white/90 backdrop-blur-sm rounded-2xl p-6 hover:shadow-xl hover:bg-warm-white transition-all duration-300 fade-in border border-light-gray/30">
-                    <div class="w-12 h-12 bg-gradient-to-r from-charcoal-gray to-deep-lilac rounded-xl flex items-center justify-center mb-4 shadow-md">
-                        <i class="fas fa-lock text-white"></i>
+                <div class="bg-warm-white rounded-xl p-8 hover:shadow-xl transition-all duration-300 fade-in border border-light-sand/70 hover:border-deep-taupe/30" style="transition-delay: 0.4s;">
+                    <div class="w-12 h-12 bg-gradient-to-r from-deep-taupe to-soft-coral rounded-lg flex items-center justify-center mb-4 shadow-md">
+                        <i class="fas fa-lock text-white text-xl"></i>
                     </div>
-                    <h3 class="text-xl font-semibold text-charcoal-gray mb-3">User Privacy & Security</h3>
-                    <p class="text-sage-gray">End-to-end encryption ensures your personal information and conversations remain completely private and secure.</p>
+                    <h3 class="text-xl font-semibold text-deep-taupe mb-3">User Privacy & Security</h3>
+                    <p class="text-soft-gray-text">End-to-end encryption ensures your personal information and conversations remain completely private and confidential.</p>
                 </div>
                 
-                <div class="bg-warm-white/90 backdrop-blur-sm rounded-2xl p-6 hover:shadow-xl hover:bg-warm-white transition-all duration-300 fade-in border border-light-gray/30">
-                    <div class="w-12 h-12 bg-gradient-to-r from-sage-gray to-mint-green rounded-xl flex items-center justify-center mb-4 shadow-md">
-                        <i class="fas fa-users text-white"></i>
+                <div class="bg-warm-white rounded-xl p-8 hover:shadow-xl transition-all duration-300 fade-in border border-light-sand/70 hover:border-soft-gray-text/30" style="transition-delay: 0.5s;">
+                    <div class="w-12 h-12 bg-gradient-to-r from-soft-gray-text to-burnt-sienna rounded-lg flex items-center justify-center mb-4 shadow-md">
+                        <i class="fas fa-users text-white text-xl"></i>
                     </div>
-                    <h3 class="text-xl font-semibold text-charcoal-gray mb-3">Community Support</h3>
-                    <p class="text-sage-gray">Connect with others on similar journeys through moderated support groups and peer connections.</p>
+                    <h3 class="text-xl font-semibold text-deep-taupe mb-3">Community Support</h3>
+                    <p class="text-soft-gray-text">Connect with others on similar journeys through safe, moderated support groups and peer connections (Optional Feature).</p>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Chatbot Preview Section -->
-    <section class="py-20 bg-soft-cream/60">
+    <section class="py-20 bg-pale-sand">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-12 fade-in">
-                <h2 class="text-3xl md:text-4xl font-bold text-charcoal-gray mb-4">
+                <h2 class="text-3xl md:text-4xl font-bold text-deep-taupe mb-4">
                     Experience Compassionate Conversations
                 </h2>
-                <p class="text-lg text-gray-600">See how Mysa provides empathetic support through AI-powered conversations</p>
+                <p class="text-lg text-soft-gray-text">See how Mysa provides empathetic support through AI-powered conversations</p>
             </div>
             
-            <div class="bg-white rounded-2xl shadow-2xl overflow-hidden fade-in border border-gray-200">
-                <div class="bg-gradient-to-r from-deep-lilac to-mint-green p-4 text-white">
+            <div class="bg-white rounded-2xl shadow-2xl overflow-hidden fade-in border border-light-sand/70">
+                <div class="bg-gradient-to-r from-burnt-sienna to-soft-coral p-4 text-white">
                     <div class="flex items-center space-x-3">
                         <div class="w-8 h-8 bg-white/40 rounded-full flex items-center justify-center shadow-sm">
                             <i class="fas fa-heart text-sm"></i>
                         </div>
-                        <span class="font-medium">Mysa AI Companion</span>
-                        <div class="flex space-x-1 ml-auto">
-                            <div class="w-2 h-2 bg-mint-green rounded-full animate-pulse"></div>
-                            <span class="text-xs">Online</span>
+                        <span class="font-medium text-lg">Mysa AI Companion</span>
+                        <div class="flex space-x-2 items-center ml-auto">
+                            <div class="w-3 h-3 bg-soft-coral rounded-full animate-pulse"></div>
+                            <span class="text-sm font-light">Online</span>
                         </div>
                     </div>
                 </div>
                 
-                <div class="p-6 space-y-4 h-80 overflow-y-auto">
+                <div class="p-6 space-y-4 h-80 overflow-y-auto bg-cream-mist/50">
                     <div class="chat-bubble">
                         <div class="flex items-start space-x-3">
-                            <div class="w-8 h-8 bg-gradient-to-r from-deep-lilac to-mint-green rounded-full flex items-center justify-center flex-shrink-0 shadow-sm">
+                            <div class="w-8 h-8 bg-gradient-to-r from-burnt-sienna to-soft-coral rounded-full flex items-center justify-center flex-shrink-0 shadow-sm">
                                 <i class="fas fa-heart text-white text-xs"></i>
                             </div>
-                            <div class="bg-soft-cream rounded-2xl rounded-tl-sm p-3 max-w-xs shadow-sm">
-                                <p class="text-charcoal-gray">Hello! I'm Mysa, your AI mental health companion. How are you feeling today?</p>
+                            <div class="bg-white rounded-2xl rounded-tl-sm p-4 max-w-xs shadow-soft border border-light-sand/70">
+                                <p class="text-deep-taupe">Hello! I'm Mysa, your AI mental health companion. How are you feeling today?</p>
                             </div>
                         </div>
                     </div>
                     
                     <div class="chat-bubble flex justify-end">
-                        <div class="bg-gradient-to-r from-deep-lilac to-sky-blue rounded-2xl rounded-tr-sm p-3 max-w-xs text-white shadow-sm">
+                        <div class="bg-gradient-to-r from-burnt-sienna to-soft-coral rounded-2xl rounded-tr-sm p-4 max-w-xs text-white shadow-md">
                             <p>I've been feeling quite anxious lately about work. It's been overwhelming.</p>
                         </div>
                     </div>
                     
                     <div class="chat-bubble">
                         <div class="flex items-start space-x-3">
-                            <div class="w-8 h-8 bg-gradient-to-r from-deep-lilac to-mint-green rounded-full flex items-center justify-center flex-shrink-0">
+                            <div class="w-8 h-8 bg-gradient-to-r from-burnt-sienna to-soft-coral rounded-full flex items-center justify-center flex-shrink-0">
                                 <i class="fas fa-heart text-white text-xs"></i>
                             </div>
-                            <div class="bg-soft-cream rounded-2xl rounded-tl-sm p-3 max-w-xs">
-                                <p class="text-charcoal-gray">I understand that work anxiety can feel really overwhelming. It's completely normal to feel this way. Would you like to talk about what specifically is causing you the most stress?</p>
+                            <div class="bg-white rounded-2xl rounded-tl-sm p-4 max-w-xs shadow-soft border border-light-sand/70">
+                                <p class="text-deep-taupe">I understand that work anxiety can feel really overwhelming. It's completely normal to feel this way. Would you like to talk about what specifically is causing you the most stress?</p>
                             </div>
                         </div>
                     </div>
                     
                     <div class="chat-bubble flex justify-end">
-                        <div class="bg-gradient-to-r from-deep-lilac to-sky-blue rounded-2xl rounded-tr-sm p-3 max-w-xs text-white">
+                        <div class="bg-gradient-to-r from-burnt-sienna to-soft-coral rounded-2xl rounded-tr-sm p-4 max-w-xs text-white shadow-md">
                             <p>Yes, I think that would help. Thank you for listening.</p>
                         </div>
                     </div>
                 </div>
                 
-                <div class="p-4 border-t border-light-gray">
+                <div class="p-4 border-t border-light-sand bg-warm-white">
                     <div class="flex items-center space-x-3">
-                        <input type="text" placeholder="Type your message..." class="flex-1 p-3 border border-light-gray rounded-full focus:outline-none focus:ring-2 focus:ring-deep-lilac">
-                        <button class="w-10 h-10 bg-gradient-to-r from-deep-lilac to-mint-green rounded-full flex items-center justify-center text-white hover:shadow-lg transition-all">
+                        <input type="text" placeholder="Type your message..." class="flex-1 p-3 border border-light-sand rounded-full focus:outline-none focus:ring-2 focus:ring-burnt-sienna transition-all" aria-label="Chat message input">
+                        <button class="w-10 h-10 bg-gradient-to-r from-burnt-sienna to-soft-coral rounded-full flex items-center justify-center text-white hover:shadow-lg transition-all hover:scale-105 active:scale-95" aria-label="Send message">
                             <i class="fas fa-paper-plane text-sm"></i>
                         </button>
                     </div>
@@ -350,51 +388,49 @@
         </div>
     </section>
 
-    <!-- Mood Tracker Section -->
-    <section class="py-20 bg-gradient-to-r from-mint-green/30 to-lavender-mist/30">
+    <section class="py-20 bg-gradient-to-r from-cream-mist/50 to-soft-coral/20">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-12 fade-in">
-                <h2 class="text-3xl md:text-4xl font-bold text-charcoal-gray mb-4">
+                <h2 class="text-3xl md:text-4xl font-bold text-deep-taupe mb-4">
                     Track Your Emotional Journey
                 </h2>
-                <p class="text-lg text-soft-gray">Visualize your mood patterns and gain insights into your mental health</p>
-                <p class="text-sm text-sage-gray mt-2">Powered by Firebase & Chart.js</p>
+                <p class="text-lg text-soft-gray-text">Visualize your mood patterns and gain valuable insights into your mental health</p>
             </div>
             
             <div class="grid md:grid-cols-2 gap-8">
-                <div class="bg-warm-white/80 backdrop-blur-sm rounded-2xl p-6 fade-in border border-light-gray/30">
-                    <h3 class="text-xl font-semibold text-charcoal-gray mb-4">Daily Mood Log</h3>
-                    <div class="space-y-3">
-                        <div class="flex items-center justify-between p-3 bg-soft-cream rounded-lg">
-                            <span class="text-soft-gray">Today</span>
-                            <div class="flex space-x-2">
+                <div class="bg-warm-white rounded-xl p-8 fade-in border border-light-sand/70 shadow-soft">
+                    <h3 class="text-xl font-semibold text-deep-taupe mb-6 border-b border-light-sand pb-2">Daily Mood Log</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between p-4 bg-cream-mist rounded-lg shadow-sm">
+                            <span class="text-soft-gray-text font-medium">Today</span>
+                            <div class="flex space-x-3 items-center">
                                 <span class="text-2xl">😊</span>
-                                <span class="text-charcoal-gray font-medium">Good</span>
+                                <span class="text-deep-taupe font-semibold">Good</span>
                             </div>
                         </div>
-                        <div class="flex items-center justify-between p-3 bg-soft-cream rounded-lg">
-                            <span class="text-soft-gray">Yesterday</span>
-                            <div class="flex space-x-2">
+                        <div class="flex items-center justify-between p-4 bg-cream-mist rounded-lg shadow-sm">
+                            <span class="text-soft-gray-text font-medium">Yesterday</span>
+                            <div class="flex space-x-3 items-center">
                                 <span class="text-2xl">😐</span>
-                                <span class="text-charcoal-gray font-medium">Okay</span>
+                                <span class="text-deep-taupe font-semibold">Okay</span>
                             </div>
                         </div>
-                        <div class="flex items-center justify-between p-3 bg-soft-cream rounded-lg">
-                            <span class="text-soft-gray">2 days ago</span>
-                            <div class="flex space-x-2">
+                        <div class="flex items-center justify-between p-4 bg-cream-mist rounded-lg shadow-sm">
+                            <span class="text-soft-gray-text font-medium">2 days ago</span>
+                            <div class="flex space-x-3 items-center">
                                 <span class="text-2xl">😔</span>
-                                <span class="text-charcoal-gray font-medium">Low</span>
+                                <span class="text-deep-taupe font-semibold">Low</span>
                             </div>
                         </div>
                     </div>
-                    <button class="w-full mt-4 bg-gradient-to-r from-deep-lilac to-mint-green text-white py-2 rounded-lg hover:shadow-lg transition-all">
+                    <button class="w-full mt-6 bg-burnt-sienna text-white py-3 rounded-xl font-bold hover:shadow-lg hover:bg-burnt-sienna/90 transition-all">
                         Log Today's Mood
                     </button>
                 </div>
                 
-                <div class="bg-warm-white/80 backdrop-blur-sm rounded-2xl p-6 fade-in border border-light-gray/30">
-                    <h3 class="text-xl font-semibold text-charcoal-gray mb-4">Weekly Mood Trends</h3>
-                    <div class="mood-chart">
+                <div class="bg-warm-white rounded-xl p-8 fade-in border border-light-sand/70 shadow-soft">
+                    <h3 class="text-xl font-semibold text-deep-taupe mb-6 border-b border-light-sand pb-2">Weekly Mood Trends</h3>
+                    <div class="mood-chart mb-4">
                         <div class="mood-line"></div>
                         <div class="mood-point" style="left: 15%;"></div>
                         <div class="mood-point" style="left: 30%; bottom: 35px;"></div>
@@ -403,7 +439,7 @@
                         <div class="mood-point" style="left: 75%; bottom: 45px;"></div>
                         <div class="mood-point" style="left: 90%; bottom: 50px;"></div>
                     </div>
-                    <div class="flex justify-between text-xs text-sage-gray mt-2">
+                    <div class="flex justify-between text-xs font-medium text-soft-gray-text mt-2">
                         <span>Mon</span>
                         <span>Tue</span>
                         <span>Wed</span>
@@ -412,80 +448,88 @@
                         <span>Sat</span>
                         <span>Sun</span>
                     </div>
-                    <p class="text-sm text-soft-gray mt-4">
-                        <i class="fas fa-trending-up text-mint-green mr-1"></i>
-                        Your mood has been improving this week! Keep up the great work.
+                    <p class="text-base text-deep-taupe mt-6 bg-soft-coral/20 p-3 rounded-lg border border-soft-coral/50">
+                        <i class="fas fa-lightbulb text-soft-coral mr-2"></i>
+                        **Insight:** Your mood has been improving over the last three days! Consider what's working well for you.
                     </p>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Resources Section -->
-    <section id="resources" class="py-20 bg-soft-cream/60">
+    <section id="resources" class="py-20 bg-pale-sand">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-16 fade-in">
-                <h2 class="text-3xl md:text-4xl font-bold text-charcoal-gray mb-4">
+                <h2 class="text-3xl md:text-4xl font-bold text-deep-taupe mb-4">
                     Additional Support Resources
                 </h2>
-                <p class="text-lg text-soft-gray max-w-2xl mx-auto">
-                    Access professional help, relaxation techniques, and self-care tools
+                <p class="text-lg text-soft-gray-text max-w-2xl mx-auto">
+                    Immediate professional help, effective relaxation techniques, and self-care tools at your fingertips
                 </p>
             </div>
             
             <div class="grid md:grid-cols-3 gap-8">
-                <div class="bg-warm-white/80 backdrop-blur-sm rounded-2xl p-6 hover:shadow-xl transition-all duration-300 fade-in border border-light-gray/30">
-                    <div class="w-12 h-12 bg-gradient-to-r from-peach-blush to-deep-lilac rounded-xl flex items-center justify-center mb-4">
-                        <i class="fas fa-phone text-white"></i>
+                <div class="bg-warm-white rounded-xl p-6 hover:shadow-xl transition-all duration-300 fade-in border border-light-sand/70 shadow-soft">
+                    <div class="w-12 h-12 bg-gradient-to-r from-crisis-red to-burnt-sienna rounded-lg flex items-center justify-center mb-4 shadow-md">
+                        <i class="fas fa-phone text-white text-xl"></i>
                     </div>
-                    <h3 class="text-xl font-semibold text-charcoal-gray mb-3">Crisis Helplines</h3>
-                    <p class="text-soft-gray mb-4">Immediate support when you need it most</p>
-                    <ul class="space-y-2 text-sm text-sage-gray">
-                        <li><strong>National Suicide Prevention:</strong> 988</li>
-                        <li><strong>Crisis Text Line:</strong> Text HOME to 741741</li>
-                        <li><strong>SAMHSA Helpline:</strong> 1-800-662-4357</li>
+                    <h3 class="text-xl font-semibold text-deep-taupe mb-3">Crisis Helplines</h3>
+                    <p class="text-soft-gray-text mb-4">Immediate, confidential support when you need it most.</p>
+                    <ul class="space-y-3 text-base text-deep-taupe">
+                        <li class="p-2 bg-cream-mist rounded-lg font-medium hover:bg-crisis-red/20 transition-colors cursor-pointer">
+                            <i class="fas fa-circle-notch text-crisis-red mr-2"></i>
+                            <strong>National Suicide Prevention:</strong> <span class="text-burnt-sienna font-bold">988</span>
+                        </li>
+                        <li class="p-2 bg-cream-mist rounded-lg font-medium hover:bg-crisis-red/20 transition-colors cursor-pointer">
+                            <i class="fas fa-comment-dots text-crisis-red mr-2"></i>
+                            <strong>Crisis Text Line:</strong> Text HOME to 741741
+                        </li>
+                        <li class="p-2 bg-cream-mist rounded-lg font-medium hover:bg-crisis-red/20 transition-colors cursor-pointer">
+                            <i class="fas fa-tty text-crisis-red mr-2"></i>
+                            <strong>SAMHSA Helpline:</strong> 1-800-662-4357
+                        </li>
                     </ul>
                 </div>
                 
-                <div class="bg-warm-white/80 backdrop-blur-sm rounded-2xl p-6 hover:shadow-xl transition-all duration-300 fade-in border border-light-gray/30">
-                    <div class="w-12 h-12 bg-gradient-to-r from-mint-green to-sky-blue rounded-xl flex items-center justify-center mb-4">
-                        <i class="fas fa-leaf text-white"></i>
+                <div class="bg-warm-white rounded-xl p-6 hover:shadow-xl transition-all duration-300 fade-in border border-light-sand/70 shadow-soft" style="transition-delay: 0.1s;">
+                    <div class="w-12 h-12 bg-gradient-to-r from-soft-coral to-accent-gold rounded-lg flex items-center justify-center mb-4 shadow-md">
+                        <i class="fas fa-leaf text-white text-xl"></i>
                     </div>
-                    <h3 class="text-xl font-semibold text-charcoal-gray mb-3">Relaxation & Mindfulness</h3>
-                    <p class="text-soft-gray mb-4">Techniques to help you find calm and peace</p>
-                    <div class="space-y-2">
-                        <button class="w-full text-left p-2 bg-soft-cream rounded-lg hover:bg-lavender-mist/20 transition-colors">
-                            <i class="fas fa-play-circle text-mint-green mr-2"></i>
+                    <h3 class="text-xl font-semibold text-deep-taupe mb-3">Relaxation & Mindfulness</h3>
+                    <p class="text-soft-gray-text mb-4">Techniques to help you find calm, grounding, and inner peace.</p>
+                    <div class="space-y-3">
+                        <button class="w-full text-left p-3 bg-cream-mist rounded-lg hover:bg-soft-coral/20 text-deep-taupe font-medium transition-colors border border-light-sand">
+                            <i class="fas fa-play-circle text-soft-coral mr-3"></i>
                             5-Minute Breathing Exercise
                         </button>
-                        <button class="w-full text-left p-2 bg-soft-cream rounded-lg hover:bg-lavender-mist/20 transition-colors">
-                            <i class="fas fa-play-circle text-mint-green mr-2"></i>
+                        <button class="w-full text-left p-3 bg-cream-mist rounded-lg hover:bg-soft-coral/20 text-deep-taupe font-medium transition-colors border border-light-sand">
+                            <i class="fas fa-play-circle text-soft-coral mr-3"></i>
                             Guided Meditation
                         </button>
-                        <button class="w-full text-left p-2 bg-soft-cream rounded-lg hover:bg-lavender-mist/20 transition-colors">
-                            <i class="fas fa-play-circle text-mint-green mr-2"></i>
+                        <button class="w-full text-left p-3 bg-cream-mist rounded-lg hover:bg-soft-coral/20 text-deep-taupe font-medium transition-colors border border-light-sand">
+                            <i class="fas fa-play-circle text-soft-coral mr-3"></i>
                             Progressive Muscle Relaxation
                         </button>
                     </div>
                 </div>
                 
-                <div class="bg-warm-white/80 backdrop-blur-sm rounded-2xl p-6 hover:shadow-xl transition-all duration-300 fade-in border border-light-gray/30">
-                    <div class="w-12 h-12 bg-gradient-to-r from-deep-lilac to-lavender-mist rounded-xl flex items-center justify-center mb-4">
-                        <i class="fas fa-book text-white"></i>
+                <div class="bg-warm-white rounded-xl p-6 hover:shadow-xl transition-all duration-300 fade-in border border-light-sand/70 shadow-soft" style="transition-delay: 0.2s;">
+                    <div class="w-12 h-12 bg-gradient-to-r from-burnt-sienna to-deep-taupe rounded-lg flex items-center justify-center mb-4 shadow-md">
+                        <i class="fas fa-book-open text-white text-xl"></i>
                     </div>
-                    <h3 class="text-xl font-semibold text-charcoal-gray mb-3">Journaling & Self-Care</h3>
-                    <p class="text-soft-gray mb-4">Tools for self-reflection and personal growth</p>
-                    <div class="space-y-2">
-                        <button class="w-full text-left p-2 bg-soft-cream rounded-lg hover:bg-lavender-mist/20 transition-colors">
-                            <i class="fas fa-edit text-deep-lilac mr-2"></i>
+                    <h3 class="text-xl font-semibold text-deep-taupe mb-3">Journaling & Self-Care</h3>
+                    <p class="text-soft-gray-text mb-4">Tools for structured self-reflection and personal growth exercises.</p>
+                    <div class="space-y-3">
+                        <button class="w-full text-left p-3 bg-cream-mist rounded-lg hover:bg-burnt-sienna/20 text-deep-taupe font-medium transition-colors border border-light-sand">
+                            <i class="fas fa-edit text-burnt-sienna mr-3"></i>
                             Daily Gratitude Prompts
                         </button>
-                        <button class="w-full text-left p-2 bg-soft-cream rounded-lg hover:bg-lavender-mist/20 transition-colors">
-                            <i class="fas fa-edit text-deep-lilac mr-2"></i>
+                        <button class="w-full text-left p-3 bg-cream-mist rounded-lg hover:bg-burnt-sienna/20 text-deep-taupe font-medium transition-colors border border-light-sand">
+                            <i class="fas fa-edit text-burnt-sienna mr-3"></i>
                             Emotion Processing Exercises
                         </button>
-                        <button class="w-full text-left p-2 bg-soft-cream rounded-lg hover:bg-lavender-mist/20 transition-colors">
-                            <i class="fas fa-edit text-deep-lilac mr-2"></i>
+                        <button class="w-full text-left p-3 bg-cream-mist rounded-lg hover:bg-burnt-sienna/20 text-deep-taupe font-medium transition-colors border border-light-sand">
+                            <i class="fas fa-edit text-burnt-sienna mr-3"></i>
                             Self-Care Checklist
                         </button>
                     </div>
@@ -494,73 +538,72 @@
         </div>
     </section>
 
-    <!-- Footer -->
-    <footer class="bg-charcoal-gray text-white py-12">
+    <footer class="bg-deep-taupe text-white py-12">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="grid md:grid-cols-4 gap-8">
+            <div class="grid md:grid-cols-4 gap-10">
                 <div class="md:col-span-2">
                     <div class="flex items-center space-x-2 mb-4">
-                        <div class="w-8 h-8 bg-gradient-to-r from-deep-lilac to-mint-green rounded-full flex items-center justify-center">
+                        <div class="w-8 h-8 bg-gradient-to-r from-burnt-sienna to-soft-coral rounded-full flex items-center justify-center">
                             <i class="fas fa-heart text-white text-sm"></i>
                         </div>
-                        <span class="text-xl font-semibold">Mysa</span>
+                        <span class="text-2xl font-bold">Mysa</span>
                     </div>
-                    <p class="text-gray-300 mb-4 max-w-md">
-                        Your AI mental health companion, providing support, understanding, and resources for your emotional well-being journey.
+                    <p class="text-gray-300 mb-6 max-w-md text-base">
+                        Your AI mental health companion, providing compassionate support, understanding, and resources for your emotional well-being journey.
                     </p>
-                    <div class="bg-yellow-100 border border-yellow-300 rounded-lg p-3 mb-4">
-                        <p class="text-yellow-800 text-sm">
-                            <i class="fas fa-exclamation-triangle mr-2"></i>
-                            <strong>Important:</strong> Mysa is not a replacement for professional mental health care. 
-                            If you're experiencing a mental health crisis, please contact emergency services or a mental health professional immediately.
+                    
+                    <div class="bg-crisis-red/20 border-l-4 border-crisis-red/70 rounded-lg p-4 mb-4">
+                        <p class="text-red-300 text-sm font-medium">
+                            <i class="fas fa-exclamation-circle text-crisis-red/90 mr-2"></i>
+                            **CRISIS WARNING:** Mysa is not a substitute for professional care. If you are in crisis, please seek professional help immediately.
                         </p>
                     </div>
-                    <div class="bg-red-100 border border-red-300 rounded-lg p-3">
-                        <p class="text-red-800 text-sm font-medium">
-                            <i class="fas fa-phone mr-2"></i>
-                            Crisis Support: National Suicide Prevention Lifeline - 988
+
+                    <div class="bg-crisis-red/30 border border-crisis-red/70 rounded-lg p-3">
+                        <p class="text-white text-lg font-extrabold flex items-center">
+                            <i class="fas fa-phone mr-3 text-xl"></i>
+                            Crisis Lifeline: <span class="ml-2">988</span>
                         </p>
                     </div>
                 </div>
                 
                 <div>
-                    <h4 class="font-semibold mb-4">Quick Links</h4>
-                    <ul class="space-y-2 text-gray-300">
-                        <li><a href="diary.html" class="hover:text-lavender-mist transition-colors">My Diary</a></li>
-                        <li><a href="#about" class="hover:text-lavender-mist transition-colors">About Mysa</a></li>
-                        <li><a href="#features" class="hover:text-lavender-mist transition-colors">Features</a></li>
-                        <li><a href="#resources" class="hover:text-lavender-mist transition-colors">Resources</a></li>
-                        <li><a href="" class="hover:text-lavender-mist transition-colors">Privacy Policy</a></li>
-                        <li><a href="#" class="hover:text-lavender-mist transition-colors">Terms of Service</a></li>
+                    <h4 class="font-semibold text-lg mb-4 text-soft-coral">Quick Links</h4>
+                    <ul class="space-y-3 text-gray-300">
+                        <li><a href="diary.html" class="hover:text-soft-coral transition-colors text-base">My Diary</a></li>
+                        <li><a href="#about" class="hover:text-soft-coral transition-colors text-base">About Mysa</a></li>
+                        <li><a href="#features" class="hover:text-soft-coral transition-colors text-base">Features</a></li>
+                        <li><a href="#resources" class="hover:text-soft-coral transition-colors text-base">Resources</a></li>
+                        <li><a href="#" class="hover:text-soft-coral transition-colors text-base">Privacy Policy</a></li>
+                        <li><a href="#" class="hover:text-soft-coral transition-colors text-base">Terms of Service</a></li>
                     </ul>
                 </div>
                 
                 <div>
-                    <h4 class="font-semibold mb-4">Connect With Us</h4>
+                    <h4 class="font-semibold text-lg mb-4 text-soft-coral">Connect With Us</h4>
                     <div class="flex space-x-4">
-                        <a href="#" class="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center hover:bg-deep-lilac transition-colors">
+                        <a href="#" class="w-10 h-10 bg-deep-taupe/70 rounded-full flex items-center justify-center hover:bg-accent-gold transition-colors shadow-md" aria-label="Twitter">
                             <i class="fab fa-twitter"></i>
                         </a>
-                        <a href="#" class="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center hover:bg-deep-lilac transition-colors">
+                        <a href="#" class="w-10 h-10 bg-deep-taupe/70 rounded-full flex items-center justify-center hover:bg-accent-gold transition-colors shadow-md" aria-label="Facebook">
                             <i class="fab fa-facebook"></i>
                         </a>
-                        <a href="#" class="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center hover:bg-deep-lilac transition-colors">
+                        <a href="#" class="w-10 h-10 bg-deep-taupe/70 rounded-full flex items-center justify-center hover:bg-accent-gold transition-colors shadow-md" aria-label="Instagram">
                             <i class="fab fa-instagram"></i>
                         </a>
-                        <a href="#" class="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center hover:bg-deep-lilac transition-colors">
+                        <a href="#" class="w-10 h-10 bg-deep-taupe/70 rounded-full flex items-center justify-center hover:bg-accent-gold transition-colors shadow-md" aria-label="LinkedIn">
                             <i class="fab fa-linkedin"></i>
                         </a>
                     </div>
                 </div>
             </div>
             
-            <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
+            <div class="border-t border-deep-taupe/50 mt-12 pt-8 text-center text-gray-400">
                 <p>&copy; 2024 Mysa AI Mental Health Companion. All rights reserved.</p>
             </div>
         </div>
     </footer>
 
-    <!-- Firebase Imports and Dynamic Logic -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -569,12 +612,12 @@
         // This must match the config used in register.html and chatbot.html
         const FIREBASE_CONFIG = {
             apiKey: "AIzaSyD73N_2NxY4_VQhy89khGKIgPVWuhSHw3Q",
-  authDomain: "mysa-77a83.firebaseapp.com",
-  projectId: "mysa-77a83",
-  storageBucket: "mysa-77a83.firebasestorage.app",
-  messagingSenderId: "199990845419",
-  appId: "1:199990845419:web:2f7feaee3c05854a4303ae",
-  measurementId: "G-0CE4KL8XE0"
+            authDomain: "mysa-77a83.firebaseapp.com",
+            projectId: "mysa-77a83",
+            storageBucket: "mysa-77a83.firebasestorage.app",
+            messagingSenderId: "199990845419",
+            appId: "1:199990845419:web:2f7feaee3c05854a4303ae",
+            measurementId: "G-0CE4KL8XE0"
         };
         
         const app = initializeApp(FIREBASE_CONFIG);
@@ -582,6 +625,7 @@
         
         const startChatButton = document.getElementById('start-chat-button');
         const navAuthLink = document.getElementById('nav-auth-link');
+        const mobileNavAuthLink = document.getElementById('mobile-nav-auth-link');
         
         // This function monitors the login state across all pages
         onAuthStateChanged(auth, (user) => {
@@ -590,11 +634,15 @@
                 startChatButton.textContent = "Continue Chat";
                 navAuthLink.textContent = "My Chat";
                 navAuthLink.href = "chatbot.html"; 
+                mobileNavAuthLink.textContent = "My Chat";
+                mobileNavAuthLink.href = "chatbot.html"; 
             } else {
                 // User is not logged in
                 startChatButton.textContent = "Start Chatting (Login Required)";
                 navAuthLink.textContent = "Login/Signup";
                 navAuthLink.href = "login.html";
+                mobileNavAuthLink.textContent = "Login/Signup";
+                mobileNavAuthLink.href = "login.html";
             }
         });
 
@@ -612,7 +660,31 @@
         });
 
 
-        // --- Existing Interactive Logic (Non-Firebase) ---
+        // --- UI Interactive Logic (Non-Firebase) ---
+
+        // Mobile Menu Toggle Logic
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        const closeMobileMenuButton = document.getElementById('close-mobile-menu');
+        const mobileMenu = document.getElementById('mobile-menu');
+
+        mobileMenuButton.addEventListener('click', () => {
+            mobileMenu.classList.add('open');
+            document.body.style.overflow = 'hidden'; // Prevent scrolling background
+        });
+
+        closeMobileMenuButton.addEventListener('click', () => {
+            mobileMenu.classList.remove('open');
+            document.body.style.overflow = 'auto';
+        });
+
+        // Close mobile menu when a link is clicked
+        mobileMenu.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', () => {
+                mobileMenu.classList.remove('open');
+                document.body.style.overflow = 'auto';
+            });
+        });
+
 
         // Fade in animation on scroll
         const observerOptions = {
@@ -660,7 +732,7 @@
                     const userMessage = document.createElement('div');
                     userMessage.className = 'chat-bubble flex justify-end';
                     userMessage.innerHTML = `
-                        <div class="bg-gradient-to-r from-deep-lilac to-sky-blue rounded-2xl rounded-tr-sm p-3 max-w-xs text-white">
+                        <div class="bg-gradient-to-r from-burnt-sienna to-soft-coral rounded-2xl rounded-tr-sm p-4 max-w-xs text-white shadow-md">
                             <p>${this.value}</p>
                         </div>
                     `;
@@ -675,11 +747,11 @@
                         aiMessage.className = 'chat-bubble';
                         aiMessage.innerHTML = `
                             <div class="flex items-start space-x-3">
-                                <div class="w-8 h-8 bg-gradient-to-r from-deep-lilac to-mint-green rounded-full flex items-center justify-center flex-shrink-0">
+                                <div class="w-8 h-8 bg-gradient-to-r from-burnt-sienna to-soft-coral rounded-full flex items-center justify-center flex-shrink-0">
                                     <i class="fas fa-heart text-white text-xs"></i>
                                 </div>
-                                <div class="bg-soft-cream rounded-2xl rounded-tl-sm p-3 max-w-xs">
-                                    <p class="text-charcoal-gray">Thank you for sharing that with me. I'm here to listen and support you. How can I help you feel better today?</p>
+                                <div class="bg-white rounded-2xl rounded-tl-sm p-4 max-w-xs shadow-soft border border-light-sand/70">
+                                    <p class="text-deep-taupe">Thank you for sharing that with me. I'm here to listen and support you. How can I help you feel better today?</p>
                                 </div>
                             </div>
                         `;
@@ -694,44 +766,68 @@
 
         // Interactive mood logging
         document.addEventListener('click', function(e) {
-            if (e.target.textContent === "Log Today's Mood") {
+            if (e.target.textContent.includes("Log Today's Mood")) {
                 e.preventDefault();
                 const moods = ['😊 Great', '🙂 Good', '😐 Okay', '😔 Low', '😢 Very Low'];
                 const randomMood = moods[Math.floor(Math.random() * moods.length)];
                 
                 // Create a simple modal-like experience
                 const notification = document.createElement('div');
-                notification.className = 'fixed top-4 right-4 bg-white rounded-lg shadow-lg p-4 z-50 border-l-4 border-mint-green';
+                notification.className = 'fixed top-4 right-4 bg-white rounded-xl shadow-2xl p-4 z-50 border-l-4 border-soft-coral transition-all transform translate-x-full';
                 notification.innerHTML = `
-                    <div class="flex items-center space-x-2">
-                        <i class="fas fa-check-circle text-mint-green"></i>
-                        <span class="font-medium">Mood logged: ${randomMood}</span>
+                    <div class="flex items-center space-x-3">
+                        <i class="fas fa-check-circle text-soft-coral text-xl"></i>
+                        <span class="font-bold text-deep-taupe">Mood Logged:</span>
+                        <span class="text-deep-taupe">${randomMood}</span>
                     </div>
                 `;
                 document.body.appendChild(notification);
-                
+
+                // Animate in
                 setTimeout(() => {
-                    notification.remove();
+                    notification.style.transform = 'translateX(0)';
+                }, 10);
+                
+                // Animate out and remove
+                setTimeout(() => {
+                    notification.style.transform = 'translateX(100%)';
+                    setTimeout(() => {
+                        notification.remove();
+                    }, 300);
                 }, 3000);
             }
         });
 
         // Interactive resource buttons
-        document.querySelectorAll('button[class*="bg-soft-cream"]').forEach(button => {
+        document.querySelectorAll('button[class*="bg-cream-mist"]').forEach(button => {
             button.addEventListener('click', function(e) {
                 e.preventDefault();
+                const buttonText = this.textContent.trim().replace(/[\n\r]+|[\s]{2,}/g, ' ');
+                const iconClass = this.querySelector('i') ? this.querySelector('i').className : 'fas fa-play-circle';
+                const iconColor = iconClass.includes('burnt-sienna') ? 'text-burnt-sienna' : 'text-soft-coral';
+
                 const notification = document.createElement('div');
-                notification.className = 'fixed top-4 right-4 bg-white rounded-lg shadow-lg p-4 z-50 border-l-4 border-deep-lilac';
+                notification.className = 'fixed top-4 right-4 bg-white rounded-xl shadow-2xl p-4 z-50 border-l-4 border-burnt-sienna transition-all transform translate-x-full';
                 notification.innerHTML = `
-                    <div class="flex items-center space-x-2">
-                        <i class="fas fa-play-circle text-deep-lilac"></i>
-                        <span class="font-medium">Starting: ${this.textContent.trim()}</span>
+                    <div class="flex items-center space-x-3">
+                        <i class="${iconClass} ${iconColor} text-xl"></i>
+                        <span class="font-bold text-deep-taupe">Starting:</span>
+                        <span class="text-deep-taupe">${buttonText}</span>
                     </div>
                 `;
                 document.body.appendChild(notification);
                 
+                // Animate in
                 setTimeout(() => {
-                    notification.remove();
+                    notification.style.transform = 'translateX(0)';
+                }, 10);
+                
+                // Animate out and remove
+                setTimeout(() => {
+                    notification.style.transform = 'translateX(100%)';
+                    setTimeout(() => {
+                        notification.remove();
+                    }, 300);
                 }, 3000);
             });
         });
