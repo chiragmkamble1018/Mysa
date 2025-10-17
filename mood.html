@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wellness Check-in</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Configure Tailwind to use a friendly font stack and custom colors -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'pastel-bg': '#F5F9FF', // Lighter background base
+                        'pastel-card': '#FFFFFF',
+                        'pastel-primary': '#8B9FE6',
+                        'pastel-light': '#D1D9F4',
+                        'pastel-success': '#78C496',
+                        'pastel-warning': '#FFD385',
+                        'pastel-danger': '#E68B8B',
+                    },
+                    fontFamily: {
+                        sans: ['Nunito', 'Poppins', 'Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom gradient for a soft, calming background (Enhanced) */
+        body {
+            /* Smoother, multi-stop gradient for depth */
+            background: linear-gradient(135deg, #EAEFFF 0%, #E9F1FF 50%, #F5F9FF 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+        /* Custom shadow for cards (Enhanced depth) */
+        .soft-shadow {
+            box-shadow: 0 20px 40px rgba(139, 159, 230, 0.15), 0 8px 15px rgba(139, 159, 230, 0.08);
+        }
+        /* Style for multiple-choice buttons (Neumorphic feel for unchecked state) */
+        .radio-label {
+            transition: all 0.25s ease-in-out;
+            border: 1px solid #e0e8f8;
+            box-shadow: 3px 3px 6px #dce0e6, -3px -3px 6px #ffffff;
+        }
+        .radio-label:hover {
+            transform: translateY(-2px);
+            box-shadow: 6px 6px 12px #dce0e6, -6px -6px 12px #ffffff;
+        }
+        /* Hide native radio button */
+        .hidden-radio:checked + .radio-label {
+            background-color: #D1D9F4; /* pastel-light */
+            border-color: #8B9FE6; /* pastel-primary */
+            font-weight: 600;
+            /* Inset shadow for "pressed" effect */
+            box-shadow: inset 2px 2px 5px #aeb6cc, inset -2px -2px 5px #f4f8ff;
+        }
+
+        /* Styling for main action buttons */
+        .main-btn {
+            transition: all 0.3s ease-in-out;
+            /* Add subtle initial shadow to primary button */
+            box-shadow: 0 5px 15px rgba(139, 159, 230, 0.4);
+        }
+        .main-btn:hover {
+            transform: translateY(-2px);
+            opacity: 0.95;
+            box-shadow: 0 8px 20px rgba(139, 159, 230, 0.6);
+        }
+
+        /* Progress Bar Styling */
+        .progress-bar-container {
+            height: 8px;
+            background-color: #e0e8f8; /* Light background for the track */
+            border-radius: 9999px;
+            margin-bottom: 32px;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background-color: #8B9FE6; /* pastel-primary */
+            border-radius: 9999px;
+            transition: width 0.5s ease-in-out;
+        }
+    </style>
+</head>
+<body class="font-sans flex items-center justify-center p-4">
+
+    <div id="app" class="w-full max-w-md bg-pastel-card rounded-3xl p-8 soft-shadow my-12 transition-all duration-500">
+        <!-- Application content loads here -->
+    </div>
+
+    <script>
+        // Global utility to provide current app ID and Firebase config/auth token (required for compliance)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        // --- Gemini API Configuration ---
+        const apiKey = "AIzaSyAadlU3SSswvt06WeO44pIHZF0DcdLHlWw"; // Canvas will provide this key at runtime
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+        // Placeholders for dynamic state
+        let questions = []; // Will be populated by the API call
+        let currentStep = 0;
+        const answers = {};
+        const appElement = document.getElementById('app');
+
+        // --- API Utility Functions ---
+
+        /**
+         * Fetches data from the API with exponential backoff for resilience.
+         * Retries up to 3 times on failure.
+         */
+        async function fetchWithRetry(url, options, retries = 3) {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (!response.ok) {
+                        if (response.status === 429 && i < retries - 1) {
+                            // Exponential backoff delay
+                            const delay = Math.pow(2, i) * 1000 + Math.random() * 1000;
+                            await new Promise(resolve => setTimeout(resolve, delay));
+                            continue;
+                        }
+                        throw new Error(`API call failed with status: ${response.status}`);
+                    }
+                    return response.json();
+                } catch (error) {
+                    if (i === retries - 1) throw error;
+                }
+            }
+        }
+
+        /**
+         * Defines the JSON schema for the model's response.
+         * This ensures the generated questions match the app's required structure.
+         */
+        const questionSchema = {
+            type: "ARRAY",
+            description: "An array of exactly 4 unique wellness questions.",
+            items: {
+                type: "OBJECT",
+                properties: {
+                    id: { type: "STRING", description: "A unique, lowercase identifier for the question (e.g., 'energy')" },
+                    type: { type: "STRING", enum: ["radio", "text"], description: "The type of input: 3 must be 'radio', 1 must be 'text'." },
+                    question: { type: "STRING", description: "The wellness question, including a relevant emoji (e.g., How do you feel about your social interactions today? 💬)." },
+                    options: {
+                        type: "ARRAY",
+                        description: "Required only if type is 'radio'. Must contain exactly three options.",
+                        items: {
+                            type: "OBJECT",
+                            properties: {
+                                text: { type: "STRING" },
+                                score: { type: "NUMBER", description: "The sentiment score for the answer (e.g., 3 for positive, 0 for neutral, -2 for negative)." },
+                                value: { type: "STRING" }
+                            },
+                            propertyOrdering: ["text", "score", "value"],
+                            required: ["text", "score", "value"]
+                        }
+                    },
+                    placeholder: { type: "STRING", description: "Required only if type is 'text'. A short example answer." }
+                },
+                propertyOrdering: ["id", "type", "question", "options", "placeholder"],
+                required: ["id", "type", "question"]
+            }
+        };
+
+        /**
+         * Calls the Gemini API to generate a new set of questions based on the JSON schema.
+         */
+        async function fetchNewQuestions() {
+            currentStep = 0; // Reset state
+            questions = []; // Clear old questions
+            
+            // Show loading spinner while fetching
+            appElement.innerHTML = `<div class="text-center py-12 text-pastel-primary">
+                <svg class="animate-spin h-8 w-8 mx-auto mb-4 text-pastel-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <p class="text-lg font-semibold">Generating your unique daily check-in questions...</p>
+            </div>`;
+
+            const systemPrompt = "You are a creative content generator for a mental wellness app. Your task is to generate exactly 4 unique questions (3 multiple-choice 'radio' questions and 1 short-answer 'text' question) for a user's daily check-in. The tone must be supportive, calming, and use simple, illustrative emojis for the question and options. Ensure the 'radio' options cover positive, neutral, and negative sentiments with corresponding scores (positive score >= 1, neutral score = 0, negative score <= -1). The questions must be new and different from typical energy/sleep questions.";
+            
+            const userQuery = "Generate a new set of 4 wellness check-in questions focusing on emotions, social energy, and personal boundaries for today. Use the provided JSON schema.";
+
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: questionSchema
+                }
+            };
+
+            try {
+                const result = await fetchWithRetry(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const jsonText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (jsonText) {
+                    const parsedQuestions = JSON.parse(jsonText);
+                    // Simple validation: must be an array of at least 4 items
+                    if (Array.isArray(parsedQuestions) && parsedQuestions.length >= 4) {
+                        questions = parsedQuestions.slice(0, 4); // Only take the first 4 if more are generated
+                        renderQuestion(); // Start the quiz with new questions
+                    } else {
+                        throw new Error("Model response invalid or empty.");
+                    }
+                } else {
+                    throw new Error("Failed to parse API response structure.");
+                }
+            } catch (e) {
+                console.error("Gemini API Error:", e);
+                appElement.innerHTML = `<p class="text-center text-red-600 py-12 font-semibold">
+                    Connection Error: Could not load dynamic questions. Check your internet connection or try refreshing the page.
+                </p>`;
+            }
+        }
+
+        // --- Utility Functions (Kept from previous version) ---
+
+        /**
+         * Simple keyword-based sentiment analysis for text input.
+         * Assigns scores based on the presence of positive or negative keywords.
+         * @param {string} text - The user's text input.
+         * @returns {number} - The sentiment score.
+         */
+        function analyzeTextSentiment(text) {
+            if (!text) return 0;
+            const normalizedText = text.toLowerCase();
+            let score = 0;
+
+            const positiveKeywords = ['happy', 'good', 'great', 'calm', 'relaxed', 'excited', 'wonderful', 'joy', 'fine', 'okay', 'looking forward', 'ready', 'eager', 'break'];
+            const negativeKeywords = ['sad', 'stressed', 'anxious', 'tired', 'bad', 'low', 'awful', 'overwhelmed', 'lonely', 'hard', 'struggle', 'difficult', 'worry'];
+
+            positiveKeywords.forEach(keyword => {
+                if (normalizedText.includes(keyword)) {
+                    score += 1.5; // Higher weight for descriptive words
+                }
+            });
+
+            negativeKeywords.forEach(keyword => {
+                if (normalizedText.includes(keyword)) {
+                    score -= 2.0; // Higher penalty for strong negative words
+                }
+            });
+
+            return score;
+        }
+
+        // --- Rendering Functions (Updated to use dynamic 'questions' array) ---
+
+        /**
+         * Renders the current question based on the step index.
+         */
+        function renderQuestion() {
+            if (currentStep >= questions.length) {
+                renderResults();
+                return;
+            }
+
+            const q = questions[currentStep];
+            let content = '';
+            
+            // Calculate progress for the bar
+            const progress = ((currentStep + 1) / questions.length) * 100;
+            
+            // Inject Progress Bar
+            content += `
+                <div class="progress-bar-container">
+                    <div class="progress-bar-fill" style="width: ${progress}%;"></div>
+                </div>
+            `;
+
+            // Question Title
+            content += `<h2 class="text-xl font-bold text-gray-700 mb-2 transition-opacity duration-300">Question ${currentStep + 1} of ${questions.length}</h2>`;
+            content += `<p class="text-2xl font-extrabold text-pastel-primary mb-8 transition-opacity duration-300">${q.question}</p>`;
+
+            // Input Type (Radio)
+            if (q.type === 'radio' && q.options) {
+                content += `<div class="space-y-4">`;
+                q.options.forEach(option => {
+                    const isChecked = answers[q.id] === option.value;
+                    content += `
+                        <div>
+                            <input type="radio" id="${q.id}-${option.value}" name="${q.id}" value="${option.value}"
+                                class="hidden-radio" data-score="${option.score}"
+                                ${isChecked ? 'checked' : ''}>
+                            <label for="${q.id}-${option.value}" class="radio-label block p-4 rounded-xl cursor-pointer text-gray-700">
+                                ${option.text}
+                            </label>
+                        </div>
+                    `;
+                });
+                content += `</div>`;
+            }
+
+            // Input Type (Text)
+            if (q.type === 'text') {
+                const currentValue = answers[q.id] || '';
+                content += `
+                    <textarea id="${q.id}-input" rows="4" class="w-full p-4 border border-pastel-light rounded-xl focus:ring-2 focus:ring-pastel-primary focus:border-transparent transition-all duration-200 resize-none text-gray-700 soft-shadow"
+                        placeholder="${q.placeholder}">${currentValue}</textarea>
+                `;
+            }
+
+            // Navigation Buttons
+            content += `<div class="flex justify-between mt-10">`;
+            if (currentStep > 0) {
+                content += `
+                    <button onclick="prevStep()" class="px-6 py-3 text-pastel-primary border border-pastel-light rounded-xl font-semibold hover:bg-pastel-bg/50 transition-all duration-300">
+                        &larr; Previous
+                    </button>
+                `;
+            } else {
+                content += `<div class="w-24"></div>`; // Spacer
+            }
+            content += `
+                <button onclick="nextStep()" class="main-btn px-6 py-3 bg-pastel-primary text-white rounded-xl font-semibold">
+                    ${currentStep < questions.length - 1 ? 'Next &rarr;' : 'Finish &rarr;'}
+                </button>
+            `;
+            content += `</div>`;
+
+            appElement.innerHTML = content;
+        }
+
+        /**
+         * Stores the user's answer and moves to the next step.
+         */
+        function nextStep() {
+            const q = questions[currentStep];
+            let isValid = false;
+
+            if (q.type === 'radio') {
+                const checkedRadio = appElement.querySelector(`input[name="${q.id}"]:checked`);
+                if (checkedRadio) {
+                    answers[q.id] = checkedRadio.value;
+                    answers[`${q.id}_score`] = parseFloat(checkedRadio.getAttribute('data-score'));
+                    isValid = true;
+                }
+            } else if (q.type === 'text') {
+                const textInput = document.getElementById(`${q.id}-input`);
+                // Allow empty text input for quick check-ins
+                answers[q.id] = textInput.value.trim();
+                isValid = true;
+            }
+
+            if (isValid) {
+                currentStep++;
+                renderQuestion();
+            } else {
+                // Use a simple visual cue instead of alert()
+                const button = appElement.querySelector('.main-btn');
+                button.classList.add('animate-pulse', 'bg-red-500');
+                setTimeout(() => {
+                    button.classList.remove('animate-pulse', 'bg-red-500');
+                }, 500);
+            }
+        }
+
+        /**
+         * Moves to the previous step.
+         */
+        function prevStep() {
+            if (currentStep > 0) {
+                currentStep--;
+                renderQuestion();
+            }
+        }
+
+        /**
+         * Calculates the final sentiment score and renders the results.
+         */
+        function renderResults() {
+            let totalScore = 0;
+
+            // 1. Calculate score from radio buttons (pre-assigned)
+            questions.forEach(q => {
+                if (q.type === 'radio' && answers[`${q.id}_score`] !== undefined) {
+                    totalScore += answers[`${q.id}_score`];
+                }
+            });
+
+            // 2. Calculate score from text input (sentiment analysis simulation)
+            const textAnswer = answers['thoughts'] || '';
+            const textScore = analyzeTextSentiment(textAnswer);
+            totalScore += textScore;
+
+            // Determine sentiment category based on total score
+            let feedback = { message: "", icon: "", color: "" };
+
+            // Thresholds:
+            // Score >= 3: Positive
+            // Score > -2 and < 3: Neutral (or slightly positive/negative)
+            // Score <= -2: Negative
+
+            if (totalScore >= 3) {
+                feedback.message = "You seem composed, balanced, and highly positive today! Keep this wonderful energy going.";
+                feedback.icon = "✨";
+                feedback.color = "text-pastel-success";
+            } else if (totalScore > -2) {
+                feedback.message = "You appear steady and balanced. You're handling your tasks well, but remember to stay mindful.";
+                feedback.icon = "🧘";
+                feedback.color = "text-pastel-warning";
+            } else {
+                feedback.message = "You might be feeling low or slightly stressed. Remember to be kind to yourself—how about a short, guided breathing exercise?";
+                feedback.icon = "☁️";
+                feedback.color = "text-pastel-danger";
+            }
+
+            const resultContent = `
+                <div class="text-center transition-all duration-500">
+                    <div class="text-7xl mb-6 ${feedback.color} animate-pulse">${feedback.icon}</div>
+                    <h2 class="text-3xl font-extrabold text-pastel-primary mb-4">Check-in Complete!</h2>
+                    <p class="text-xl text-gray-700 font-semibold mb-8">${feedback.message}</p>
+                    <button onclick="fetchNewQuestions()"
+                        class="main-btn px-8 py-4 bg-pastel-primary text-white rounded-xl font-bold mt-4">
+                        Start a New Check-in
+                    </button>
+                </div>
+            `;
+            appElement.innerHTML = resultContent;
+        }
+
+        // Start the application
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchNewQuestions();
+        });
+
+    </script>
+</body>
+</html>

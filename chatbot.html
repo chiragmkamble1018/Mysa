@@ -393,6 +393,9 @@
                 sendButton.disabled = false;
                 micButton.disabled = !isSTTSupported; 
                 userInput.focus();
+                
+                // Start continuous listening AFTER user is authenticated and UI is ready
+                startContinuousListening();
 
                 setupChatListener(); // Start listening for data
             });
@@ -413,12 +416,17 @@
     
     const systemPrompt = "You are Mysa, an AI-powered Emotional Compass. Your goal is to provide empathetic, non-judgemental, and proactive mental health support. Always maintain a warm, supportive, and conversational tone. Your responses should be brief, validating, and encouraging. Focus on validating feelings and offering small, actionable coping strategies (like deep breaths, light stretching, or journaling prompts) after the initial validation. NEVER offer professional medical advice. After three turns, gently suggest checking their daily mood in a separate feature.";
     const CRISIS_KEYWORDS = ['suicide', 'end it all', 'kill myself', 'hurt myself', 'want to die', 'harm myself'];
+    const WAKE_WORD = "hey mysa";
     
     // Voice State
     let isRecording = false;
-    let isBotSpeaking = false; // New flag for V2V interaction
+    let isBotSpeaking = false; 
     const isSTTSupported = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
-    const recognition = isSTTSupported ? new (window.webkitSpeechRecognition || window.SpeechRecognition)() : null;
+    
+    // Check if the current environment supports SpeechRecognition
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    const recognition = isSTTSupported ? new SpeechRecognition() : null;
     
     let currentAudio = null;
 
@@ -499,19 +507,16 @@
         
         currentAudio.onended = () => {
             isBotSpeaking = false;
-            // Clear the object URL to free memory
             URL.revokeObjectURL(audioUrl); 
             if (onFinish) onFinish();
         };
         currentAudio.onerror = (e) => {
             console.error("Audio playback error.", e);
             isBotSpeaking = false;
-            // Clear the object URL to free memory
             URL.revokeObjectURL(audioUrl); 
             if (onFinish) onFinish();
         }
         
-        // Attempt to start playback, handling potential AutoPlay policies
         currentAudio.play().catch(e => {
             console.warn("Autoplay was prevented (requires user interaction first):", e);
             isBotSpeaking = false;
@@ -521,7 +526,7 @@
 
     // Speech-to-Text Setup
     if (isSTTSupported) {
-        recognition.continuous = false;
+        recognition.continuous = false; // We manage continuity manually
         recognition.lang = 'en-US';
         recognition.interimResults = false;
         recognition.maxAlternatives = 1;
@@ -529,38 +534,71 @@
         recognition.onstart = () => {
             isRecording = true;
             micButton.classList.add('recording');
-            userInput.placeholder = "Listening... Speak now.";
+            userInput.placeholder = "Listening... Say 'Hey Mysa' to start.";
+            // Temporarily disable manual text input during recording
             userInput.disabled = true;
             sendButton.disabled = true;
+            micButton.disabled = false; // Keep mic button enabled to stop recording
         };
 
         recognition.onresult = (event) => {
-            const transcript = event.results[0][0].transcript;
-            userInput.value = transcript;
-            sendMessage(transcript, true); // Send message from voice
+            const transcript = event.results[0][0].transcript.toLowerCase();
+            console.log("Transcript detected:", transcript);
+            
+            if (transcript.startsWith(WAKE_WORD)) {
+                // If wake word is detected, process the rest of the command
+                let command = transcript.substring(WAKE_WORD.length).trim();
+                if (command.length === 0) {
+                    // If only 'Hey Mysa' was said, prompt the user for the full command
+                    command = "Hello. What's on your mind?";
+                }
+                
+                userInput.value = command; // Display the command in the input field
+                sendMessage(command, true); // Send the message
+                
+            } else if (isRecording) {
+                 // If not the wake word, restart listening (or stop, depending on continuous setting)
+                 // Since continuous=false, we stop and let onend restart it for continuous wake word
+                 recognition.stop();
+            }
         };
 
         recognition.onend = () => {
             isRecording = false;
             micButton.classList.remove('recording');
-            // Controls re-enabled by sendMessage's finishTurn function
+
+            // If the chatbot is not currently speaking, restart continuous listening
+            // This is the core of the wake word loop
+            if (!isBotSpeaking && isAuthReady) {
+                 setTimeout(() => {
+                     if (!isRecording) { // Prevent multiple starts if user clicked button
+                        startContinuousListening(); 
+                     }
+                 }, 500);
+            } else {
+                 // If the bot is speaking, the finishTurn function will restart listening after audio ends
+                 finishTurn();
+            }
         };
 
         recognition.onerror = (event) => {
             console.error('Speech Recognition Error:', event.error);
-            const errorMsg = `Voice input error: ${event.error}. Please check your microphone permissions.`;
-            const alertDiv = document.createElement('div');
-            alertDiv.className = 'crisis-alert fixed bottom-5 right-5 z-50';
-            alertDiv.innerHTML = `<p class="font-bold">Microphone Error</p><p class="text-sm mt-1">${errorMsg}</p>`;
-            document.body.appendChild(alertDiv);
-            setTimeout(() => document.body.removeChild(alertDiv), 5000);
+            // Ignore no-speech errors, which are common in continuous loops
+            if (event.error !== 'no-speech') {
+                const errorMsg = `Voice input error: ${event.error}. Restarting listener...`;
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'crisis-alert fixed bottom-5 right-5 z-50';
+                alertDiv.innerHTML = `<p class="font-bold">Microphone Error</p><p class="text-sm mt-1">${errorMsg}</p>`;
+                document.body.appendChild(alertDiv);
+                setTimeout(() => document.body.removeChild(alertDiv), 5000);
+            }
             
-            // Re-enable inputs
-            if (isAuthReady) {
-                userInput.placeholder = "Share how you are feeling...";
-                userInput.disabled = false;
-                sendButton.disabled = false;
-                micButton.disabled = !isSTTSupported;
+            // Attempt to restart listening immediately after an error
+            isRecording = false; 
+            if (isAuthReady && !isBotSpeaking) {
+                 setTimeout(startContinuousListening, 100);
+            } else {
+                 finishTurn();
             }
         };
     } else {
@@ -569,10 +607,25 @@
         console.warn("Speech Recognition not supported in this browser.");
     }
     
+    function startContinuousListening() {
+         if (isRecording || !isAuthReady || !isSTTSupported || isBotSpeaking) return;
+         
+         try {
+             recognition.start();
+             console.log("Listening for wake word...");
+         } catch (e) {
+             // Catch error if recognition is already running (e.g., race condition)
+             if (e.name !== 'InvalidStateError') {
+                 console.error("Recognition start failed:", e);
+                 // Fallback to manual input
+                 finishTurn(); 
+             }
+         }
+    }
+
     function toggleRecording() {
         if (!isAuthReady) return; 
 
-        // CRITICAL: If bot is speaking, stop the audio immediately
         if (isBotSpeaking && currentAudio) {
             currentAudio.pause();
             currentAudio.currentTime = 0;
@@ -581,19 +634,33 @@
 
         if (isRecording) {
             recognition.stop();
+            // recognition.onend will handle the cleanup and potential restart
         } else {
+            // Start listening manually (this bypasses the wake word check for a direct input)
             try {
+                // Set to continuous=true temporarily for manual button press, allowing long input
+                recognition.continuous = true; 
                 recognition.start();
             } catch (e) {
                 console.error("Recognition start failed:", e);
-                const alertDiv = document.createElement('div');
-                alertDiv.className = 'crisis-alert fixed bottom-5 right-5 z-50';
-                alertDiv.innerHTML = `<p class="font-bold">Microphone Start Failed</p><p class="text-sm mt-1">Please ensure your browser has microphone permission enabled for this page.</p>`;
-                document.body.appendChild(alertDiv);
-                setTimeout(() => document.body.removeChild(alertDiv), 5000);
             }
         }
     }
+    
+    /** Re-enables controls and ensures continuous listening restarts if needed. */
+    const finishTurn = () => {
+        userInput.placeholder = "Share how you are feeling...";
+        userInput.disabled = false;
+        sendButton.disabled = false;
+        micButton.disabled = !isSTTSupported;
+        userInput.focus();
+        
+        // Ensure continuous listening is restarted only if not currently speaking
+        if (!isBotSpeaking && isAuthReady) {
+             startContinuousListening(); 
+        }
+    };
+
 
     // ========================================================================
     // --- 3. MAIN APPLICATION LOGIC (UI & Chat Flow) ---
@@ -686,15 +753,11 @@
         sendButton.disabled = true;
         micButton.disabled = true;
         userInput.placeholder = "Awaiting response...";
-
-        // Function to re-enable controls after bot's turn (either text or audio)
-        const finishTurn = () => {
-            userInput.placeholder = "Share how you are feeling...";
-            userInput.disabled = false;
-            sendButton.disabled = false;
-            micButton.disabled = !isSTTSupported;
-            userInput.focus();
-        };
+        
+        // Stop continuous listening right before starting the AI response sequence
+        if (isRecording) {
+            recognition.stop(); 
+        }
 
         // 3. Handle Crisis Detection
         if (isCrisis) {

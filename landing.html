@@ -336,12 +336,90 @@
                 <h1 class="gsap-hero-title">
                     <span class="text-opaque-primary">Mysa</span> <br class="responsive-break">— Where Mind Meets the <span class="text-gradient">Future</span>
                 </h1>
+                <p class="gsap-hero-subtitle">
+                    Your future-forward AI Companion for mental wellness. Emotion-aware, insightful, and always available.
+                </p>
+                <div class="cta-group">
+                    <!-- The CTA button directs the user to the main application page -->
+                    <a href="index.html" class="btn btn-primary mr-4" role="button">
+                        Start Chatting 
+                        <i class="fas fa-arrow-right ml-2"></i>
+                    </a>
+                    <!-- The Explore button uses an anchor link for smooth scrolling -->
+                    <a href="#features" class="btn btn-secondary" role="button">
+                        Explore Features
+                    </a>
+                </div>
+            </div>
+        </section>
 
+        <a href="#hero" id="fixed-home-btn" class="btn btn-primary" role="button" aria-label="Go back to the top of the page">
+            <i class="fas fa-home mr-2"></i> Home
+        </a>
+        
+        <section id="features" class="container">
+            <h2 class="gsap-section-title">A Comprehensive Toolkit for Wellness</h2>
+            <div id="features-grid" class="gsap-features-grid">
+                
+                <div class="feature-card glass-card">
+                    <i class="fas fa-robot"></i>
+                    <h3>AI Companion</h3>
+                    <p>Emotion-aware voice and text chat to help you process feelings and explore coping strategies.</p>
+                </div>
+                
+                <div class="feature-card glass-card">
+                    <i class="fas fa-heartbeat"></i>
+                    <h3>Continuous Mood Tracking</h3>
+                    <p>Log daily emotional states and let Mysa monitor trends, offering personalized advice and insights.</p>
+                </div>
 
-    <a href="#hero" id="fixed-home-btn" class="btn btn-primary" role="button" aria-label="Go back to the top of the page">
-        <i class="fas fa-home mr-2"></i> Home
-    </a>
+                <div class="feature-card glass-card">
+                    <i class="fas fa-shield-alt"></i>
+                    <h3>Risk & Safety Detection</h3>
+                    <p>Always monitoring for signs of distress, ensuring immediate access to professional resources when needed.</p>
+                </div>
 
+                <div class="feature-card glass-card">
+                    <i class="fas fa-book-open"></i>
+                    <h3>Personal Diary</h3>
+                    <p>A private, secure space for uncensored reflection and long-form journaling.</p>
+                </div>
+                
+                <div class="feature-card glass-card">
+                    <i class="fas fa-puzzle-piece"></i>
+                    <h3>Relaxation Games</h3>
+                    <p>Interactive exercises and games designed to calm anxiety and promote mindfulness.</p>
+                </div>
+                
+                <div class="feature-card glass-card">
+                    <i class="fas fa-clipboard-list"></i>
+                    <h3>Daily Routine Planner</h3>
+                    <p>Structure your day with ease to build positive habits and reduce decision fatigue.</p>
+                </div>
+
+            </div>
+        </section>
+
+        <section id="ai-tech" class="container">
+            <h2 class="gsap-section-title">The Technology Behind Mysa</h2>
+            <div id="ai-showcase-content">
+                <div id="ai-sphere-container">
+                    <!-- 3D AI Sphere visualization is rendered here by Three.js -->
+                </div>
+                <p>
+                    Mysa utilizes state-of-the-art **Generative AI** and **Natural Language Processing (NLP)** to provide human-like empathy and actionable guidance. It is designed to be an ever-learning, safe companion that adapts to your unique emotional needs.
+                </p>
+                <a href="#hero" class="btn btn-secondary mt-6" role="button">
+                    See How It Works
+                </a>
+            </div>
+        </section>
+
+        <footer class="text-center py-8">
+            <p class="text-sm opacity-70">&copy; 2025 Mysa Wellness. Your journey to calm starts now.</p>
+        </footer>
+        
+    </div>
 
    <script type="module">
 if (typeof gsap !== 'undefined') {
@@ -354,6 +432,8 @@ const config = {
     numParticles: 400,
     rotationAngle: Math.PI * 2, // full rotation
     zoomDistance: 5, // camera zoom in/out
+    // CORRECTED: Set the delay to 6000ms (6 seconds) as requested.
+    REDIRECT_DELAY: 6000 
 };
 
 let scene, camera, renderer, particles, links;
@@ -382,13 +462,14 @@ function initThreeJS() {
         renderer.setSize(window.innerWidth, window.innerHeight);
         container.appendChild(renderer.domElement);
 
+        // Colors
+        colorTeal = new THREE.Color(getComputedStyle(document.documentElement).getPropertyValue('--color-accent-teal').trim());
+        colorViolet = new THREE.Color(getComputedStyle(document.documentElement).getPropertyValue('--color-accent-violet').trim());
+
         // Particles
         const geometry = new THREE.BufferGeometry();
         const positions = new Float32Array(config.numParticles * 3);
         const colors = new Float32Array(config.numParticles * 3);
-
-        colorTeal = new THREE.Color(getComputedStyle(document.documentElement).getPropertyValue('--color-accent-teal').trim());
-        colorViolet = new THREE.Color(getComputedStyle(document.documentElement).getPropertyValue('--color-accent-violet').trim());
         const tempColor = new THREE.Color();
 
         for (let i = 0; i < config.numParticles; i++) {
@@ -472,6 +553,23 @@ function initAISphere() {
     scene.add(ambientLight);
 }
 
+// --- Render loop (Original Logic) ---
+function animate() {
+    requestAnimationFrame(animate);
+    if (particles) {
+        particles.rotation.x += 0.0005;
+        particles.rotation.y += 0.0005;
+    }
+    
+    // AI Sphere rotation (Original Logic)
+    if (aiSphereMesh) {
+        aiSphereMesh.rotation.x += 0.005;
+        aiSphereMesh.rotation.y += 0.005;
+    }
+    
+    renderer.render(scene, camera);
+}
+
 // --- Event Handler ---
 function onWindowResize() {
     camera.aspect = window.innerWidth / window.innerHeight;
@@ -479,7 +577,7 @@ function onWindowResize() {
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
-// --- Animate Once ---
+// --- Animate Once (Original Logic) ---
 function animateOnce() {
     const tl = gsap.timeline({ onUpdate: () => renderer.render(scene, camera) });
     
@@ -487,8 +585,8 @@ function animateOnce() {
     tl.to(particles.rotation, { duration: 3, y: config.rotationAngle, ease: "power2.inOut" });
 
     // Zoom in and out
-    tl.to(camera.position, { duration: 1.5, z: camera.position.z - config.zoomDistance, ease: "power2.inOut" });
-    tl.to(camera.position, { duration: 1.5, z: camera.position.z + config.zoomDistance, ease: "power2.inOut" });
+    tl.to(camera.position, { duration: 1.5, z: camera.position.z - config.zoomDistance, ease: "power2.inOut" }, 0);
+    tl.to(camera.position, { duration: 1.5, z: camera.position.z + config.zoomDistance, ease: "power2.inOut" }, 1.5);
 
     // Scale AI Sphere in
     if (aiSphereMesh) {
@@ -496,7 +594,7 @@ function animateOnce() {
     }
 }
 
-// --- GSAP Hero & Scroll Animations ---
+// --- GSAP Hero & Scroll Animations (Original Logic) ---
 function initGSAPAnimations() {
     if (config.prefersReducedMotion || typeof gsap === 'undefined') return;
 
@@ -518,12 +616,86 @@ function initGSAPAnimations() {
         });
     });
 
-    gsap.fromTo("#fixed-home-btn", { y: 20, opacity: 0 }, { duration: 0.8, opacity: 1, y: 0, ease: "power2.out", delay: 1.5 });
+    gsap.fromTo("#fixed-home-btn", { duration: 0.8, y: 20, opacity: 0 }, { duration: 0.8, opacity: 1, y: 0, ease: "power2.out", delay: 1.5 });
+    
+    // Link AI sphere to scroll
+    gsap.to(aiSphereMesh.rotation, {
+        scrollTrigger: {
+            trigger: "body",
+            start: "top top",
+            end: "bottom bottom",
+            scrub: 1.5,
+        },
+        y: Math.PI * 4,
+        x: Math.PI * 2,
+        z: Math.PI * 1,
+    });
+    
+    gsap.to(particles.rotation, {
+        scrollTrigger: {
+            trigger: "body",
+            start: "top top",
+            end: "bottom bottom",
+            scrub: 1,
+        },
+        y: Math.PI * 0.5,
+    });
 }
+
+// --- Implementation Logic: Redirect Timer ---
+function initRedirect(delay = config.REDIRECT_DELAY) {
+    const loadingBar = document.getElementById('loading-bar');
+    const loadingFill = document.createElement('div');
+    loadingFill.id = 'loading-fill';
+    // Check if loading bar element exists (only appears on loader screen version)
+    if(loadingBar) {
+        loadingBar.appendChild(loadingFill);
+    
+        // Start the visual loading fill
+        loadingFill.style.transitionDuration = `${delay / 1000}s`;
+        loadingFill.style.width = '100%';
+    }
+
+    // Redirect after delay
+    setTimeout(() => {
+        // Ensure the scroll position is reset before redirecting to the functional page
+        window.scrollTo(0, 0); 
+        window.location.href = 'index.html'; // Redirect to the main app page
+    }, delay);
+    
+    // Hide all scrollable content while loading
+    document.body.style.overflowY = 'hidden';
+    const fixedHomeBtn = document.getElementById('fixed-home-btn');
+    if (fixedHomeBtn) fixedHomeBtn.style.display = 'none';
+
+    // IMPORTANT FIX: The floating text is part of main-content. We want it to stay visible.
+    // We only fade out the background canvas's visual impact, then redirect.
+    // Removing the full opacity: 0 fade, and setting opacity transition for a smoother exit.
+    document.getElementById('main-content').style.transition = 'opacity 0.5s'; 
+    document.getElementById('main-content').style.opacity = '1';
+
+    // Final fade out before redirect
+    setTimeout(() => {
+        document.getElementById('main-content').style.opacity = '0';
+        document.getElementById('webgl-canvas-container').style.opacity = '0';
+    }, delay - 500); // Start fade-out slightly before redirect
+
+
+    // Clean up visibility after redirect
+    setTimeout(() => {
+        document.body.style.overflowY = 'auto';
+        document.getElementById('main-content').style.opacity = '1';
+    }, delay);
+}
+
 
 // --- Main Execution ---
 window.addEventListener('load', () => {
     initThreeJS();
     initGSAPAnimations();
+    // This calls the loader function which automatically redirects after the animation completes
+    initRedirect(config.REDIRECT_DELAY); 
 });
 </script>
+</body>
+</html>
