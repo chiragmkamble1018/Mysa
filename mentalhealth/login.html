@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Login</title>
+    
+    <style>
+        body { 
+            font-family: sans-serif; 
+            background-color: #f0f2f5; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh; 
+            margin: 0; 
+        }
+        .login-container { 
+            background: white; 
+            padding: 40px; 
+            border-radius: 10px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15); 
+            width: 350px; 
+            text-align: center; 
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 25px;
+            font-size: 24px;
+        }
+        input { 
+            width: 100%; 
+            padding: 12px; 
+            margin: 10px 0; 
+            border: 1px solid #ddd; 
+            border-radius: 6px; 
+            box-sizing: border-box; 
+            font-size: 16px;
+        }
+        button { 
+            background-color: #007bff; 
+            color: white; 
+            padding: 12px 20px; 
+            border: none; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            width: 100%; 
+            margin-top: 15px; 
+            font-size: 16px; 
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #999;
+            cursor: not-allowed;
+        }
+        .error-message { 
+            color: #dc3545; 
+            margin-top: 15px; 
+            font-weight: bold;
+        }
+        p {
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h1>Sign In</h1>
+        <form id="loginForm">
+            <input type="email" id="email" placeholder="Email Address" required>
+            <input type="password" id="password" placeholder="Password" required>
+            <button type="submit" id="loginButton">Login</button>
+        </form>
+        <p class="error-message" id="errorMessage"></p>
+        <p>Don't have an account? <a href="register.html">Register Here</a></p>
+    </div>
+
+    <script type="module">
+        // Import Firebase core and Authentication service
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+
+        // ⚠️ 1. REPLACE THIS CONFIG WITH YOUR OWN FIREBASE PROJECT DETAILS!
+      const firebaseConfig = {
+  apiKey: "AIzaSyD73N_2NxY4_VQhy89khGKIgPVWuhSHw3Q",
+  authDomain: "mysa-77a83.firebaseapp.com",
+  projectId: "mysa-77a83",
+  storageBucket: "mysa-77a83.firebasestorage.app",
+  messagingSenderId: "199990845419",
+  appId: "1:199990845419:web:2f7feaee3c05854a4303ae",
+  measurementId: "G-0CE4KL8XE0"
+};
+
+        // 2. INITIALIZE FIREBASE APP AND AUTH SERVICE
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        // 3. LOGIN FUNCTION
+        async function handleLogin(auth, email, password) {
+            const errorMessageElement = document.getElementById('errorMessage');
+            const loginButton = document.getElementById('loginButton');
+            errorMessageElement.textContent = '';
+            
+            loginButton.disabled = true;
+            loginButton.textContent = 'Logging in...';
+
+            try {
+                // Call the Firebase sign-in method
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+                
+                console.log('User successfully logged in:', user.email);
+                
+                // Success: Redirect to a protected page (e.g., dashboard.html)
+                window.location.href = 'index.html'; 
+                
+            } catch (error) {
+                console.error('Login Error:', error);
+                
+                let message = error.message;
+
+                // Provide user-friendly error messages based on Firebase error codes
+                switch (error.code) {
+                    case 'auth/user-not-found':
+                    case 'auth/wrong-password':
+                    case 'auth/invalid-credential': // Modern Firebase uses this for user/password mismatches
+                        message = 'Invalid email or password.';
+                        break;
+                    case 'auth/invalid-email':
+                        message = 'The email address is not valid.';
+                        break;
+                    case 'auth/user-disabled':
+                        message = 'This account has been disabled.';
+                        break;
+                    default:
+                        message = 'An error occurred during login.';
+                }
+                
+                errorMessageElement.textContent = message;
+
+            } finally {
+                loginButton.disabled = false;
+                loginButton.textContent = 'Login';
+            }
+        }
+        
+        // 4. Attach event listener to the form
+        document.getElementById('loginForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            handleLogin(auth, email, password);
+        });
+    </script>
+</body>
+</html>

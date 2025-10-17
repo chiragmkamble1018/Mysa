@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Satisfying Pop Game - Levels</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Tone.js for click/pop sound generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #e0f7fa; /* Very light, calming cyan */
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            overflow: hidden;
+        }
+        #game-canvas {
+            background-color: #ffffff;
+            border: 2px solid #00bcd4; /* Cyan 500 */
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            cursor: crosshair;
+            border-radius: 12px;
+            touch-action: none; /* Disable default touch actions */
+        }
+        .score-display, .level-selection {
+            background-color: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(5px);
+        }
+        /* Muted style for non-selected buttons */
+        .level-btn.bg-gray-400 {
+            background-color: #9ca3af; /* Gray-400 */
+        }
+    </style>
+</head>
+<body>
+    <div class="z-10 max-w-xl w-full text-center mb-6">
+        <h1 class="text-3xl font-extrabold text-cyan-600 mb-2">Satisfying Pop Game</h1>
+        <p class="text-gray-500 mb-4">Click the bubbles to pop them before they float away!</p>
+        
+        <!-- Level Selection -->
+        <div class="level-selection p-3 rounded-xl shadow-md mb-4">
+            <h3 class="text-sm font-semibold text-gray-600 mb-2">Select Difficulty:</h3>
+            <div id="level-buttons" class="flex justify-center space-x-3">
+                <button data-level="easy" class="level-btn px-4 py-1 text-white rounded-full transition duration-150 font-bold text-sm">Easy</button>
+                <button data-level="medium" class="level-btn px-4 py-1 text-white rounded-full transition duration-150 font-bold text-sm">Medium</button>
+                <button data-level="hard" class="level-btn px-4 py-1 text-white rounded-full transition duration-150 font-bold text-sm">Hard</button>
+            </div>
+        </div>
+
+        <!-- Score and Control Buttons -->
+        <div class="score-display p-4 rounded-xl shadow-md flex justify-between items-center">
+            <span class="text-xl font-semibold text-gray-700">Score: <span id="score-value">0</span></span>
+            <div class="flex space-x-3">
+                <!-- NEW STOP BUTTON -->
+                <button id="stop-btn" class="px-6 py-2 bg-red-500 text-white font-bold rounded-full hover:bg-red-600 transition duration-150 hidden">
+                    Stop Game
+                </button>
+                <button id="start-btn" class="px-6 py-2 bg-cyan-500 text-white font-bold rounded-full hover:bg-cyan-600 transition duration-150">
+                    Start Popping
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <canvas id="game-canvas" width="480" height="600"></canvas>
+    
+    <!-- NEW: Game Over Modal/Scoreboard -->
+    <div id="game-over-modal" class="fixed inset-0 bg-gray-900 bg-opacity-80 flex items-center justify-center z-50 hidden">
+        <div class="bg-white p-8 rounded-xl shadow-2xl text-center max-w-sm w-full transform transition-transform duration-300 scale-100">
+            <h2 class="text-4xl font-extrabold text-cyan-600 mb-4">Game Over!</h2>
+            <p class="text-xl text-gray-700 mb-2">Your Final Score:</p>
+            <p id="final-score" class="text-6xl font-black text-red-500 mb-6">0</p>
+            <button id="restart-btn" class="px-8 py-3 bg-cyan-500 text-white font-bold rounded-full hover:bg-cyan-600 transition duration-150 text-lg">
+                Play Again
+            </button>
+        </div>
+    </div>
+
+    <script type="module">
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        const startBtn = document.getElementById('start-btn');
+        const stopBtn = document.getElementById('stop-btn'); // NEW
+        const scoreValueEl = document.getElementById('score-value');
+        const levelButtons = document.querySelectorAll('.level-btn');
+        const gameOverModal = document.getElementById('game-over-modal'); // NEW
+        const finalScoreEl = document.getElementById('final-score'); // NEW
+        const restartBtn = document.getElementById('restart-btn'); // NEW
+        
+        // --- Game State Variables ---
+        let isRunning = false;
+        let bubbles = [];
+        let score = 0;
+        let popSynth; // Tone.js Synth for sound
+        let currentLevel = 'easy'; // Default level
+        let animationFrameId; // To store requestAnimationFrame ID
+        let bubbleIntervalId; // To store setInterval ID
+
+        // --- Level Configuration ---
+        const LEVELS = {
+            'easy': {
+                speedMin: 0.5, speedMax: 1.0, 
+                frequency: 1200, // Slower spawn
+                radiusMin: 20, radiusMax: 45, // Larger targets
+                color: 'bg-green-500' // Button color
+            },
+            'medium': {
+                speedMin: 1.0, speedMax: 1.5, 
+                frequency: 800, 
+                radiusMin: 15, radiusMax: 35,
+                color: 'bg-yellow-500'
+            },
+            'hard': {
+                speedMin: 1.5, speedMax: 2.5, 
+                frequency: 500, // Faster spawn
+                radiusMin: 10, radiusMax: 25, // Smaller targets
+                color: 'bg-red-500'
+            }
+        };
+
+        // --- UI Initialization ---
+        
+        function updateLevelUI(selectedLevel) {
+            levelButtons.forEach(btn => {
+                const level = btn.dataset.level;
+                btn.className = level-btn px-4 py-1 text-white rounded-full transition duration-150 font-bold text-sm;
+                
+                if (level !== selectedLevel) {
+                    btn.classList.add('bg-gray-400', 'opacity-70', 'hover:bg-gray-500');
+                } else {
+                    btn.classList.add(LEVELS[level].color, 'opacity-100', hover:${LEVELS[level].color.replace('500', '600')});
+                }
+            });
+        }
+
+        // --- Sound Setup ---
+        function setupSound() {
+            popSynth = new Tone.PolySynth(Tone.Synth, {
+                oscillator: { type: "square" },
+                envelope: {
+                    attack: 0.001,
+                    decay: 0.15,
+                    sustain: 0.01,
+                    release: 0.1
+                }
+            }).toDestination();
+            popSynth.volume.value = -10;
+        }
+        
+        function playPopSound(x) {
+            if (Tone.context.state !== 'running') {
+                Tone.start();
+            }
+            const minFreq = 300;
+            const maxFreq = 600;
+            const normalizedX = x / canvas.width;
+            const freq = minFreq + normalizedX * (maxFreq - minFreq);
+            popSynth.triggerAttackRelease(freq, "8n");
+        }
+
+        // --- Bubble Object ---
+        class Bubble {
+            constructor(x, y, radius, color, speed) {
+                this.x = x;
+                this.y = y;
+                this.radius = radius;
+                this.color = color;
+                this.speed = speed;
+                this.isPopped = false;
+            }
+
+            update() {
+                this.y -= this.speed;
+                if (this.y < -this.radius) {
+                    this.isPopped = true;
+                }
+            }
+
+            draw() {
+                if (this.isPopped) return;
+                
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                
+                ctx.shadowColor = this.color;
+                ctx.shadowBlur = 10;
+                
+                ctx.fillStyle = this.color.replace(')', ', 0.6)');
+                ctx.fill();
+                
+                ctx.shadowBlur = 0; 
+                ctx.strokeStyle = this.color.replace(')', ', 0.8)');
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                ctx.closePath();
+            }
+            
+            isClicked(clickX, clickY) {
+                const distance = Math.sqrt(
+                    (clickX - this.x) ** 2 + (clickY - this.y) ** 2
+                );
+                return distance < this.radius;
+            }
+        }
+
+        // --- Game Core Functions ---
+
+        function createBubble() {
+            if (!isRunning) return;
+
+            const levelConfig = LEVELS[currentLevel];
+            
+            const radius = Math.random() * (levelConfig.radiusMax - levelConfig.radiusMin) + levelConfig.radiusMin; 
+            const speed = Math.random() * (levelConfig.speedMax - levelConfig.speedMin) + levelConfig.speedMin;
+            const x = Math.random() * (canvas.width - radius * 2) + radius;
+            const y = canvas.height + radius;
+            
+            const hue = [180, 210, 150][Math.floor(Math.random() * 3)];
+            const color = hsl(${hue}, 70%, 50%);
+
+            bubbles.push(new Bubble(x, y, radius, color, speed));
+            
+            // Re-set interval using fixed frequency for the current level
+            clearInterval(bubbleIntervalId);
+            bubbleIntervalId = setInterval(createBubble, levelConfig.frequency);
+        }
+
+        function gameLoop() {
+            if (!isRunning) return;
+
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.1)'; 
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#ffffff';
+
+            bubbles = bubbles.filter(bubble => {
+                if (bubble.isPopped) {
+                    return false;
+                }
+                bubble.update();
+                bubble.draw();
+                return true;
+            });
+
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+        
+        // NEW: Function to handle game cessation and show scoreboard
+        function endGame() {
+            if (!isRunning) return; // Prevent double-ending
+            isRunning = false;
+            
+            // Stop animation and generation
+            cancelAnimationFrame(animationFrameId);
+            clearInterval(bubbleIntervalId);
+            
+            // Clear bubbles and canvas
+            bubbles = [];
+            ctx.clearRect(0, 0, canvas.width, canvas.height); 
+
+            // Show start button, hide stop button
+            startBtn.classList.remove('hidden');
+            stopBtn.classList.add('hidden');
+            startBtn.textContent = Start Popping;
+            startBtn.disabled = false;
+
+            // Display Scoreboard
+            finalScoreEl.textContent = score;
+            gameOverModal.classList.remove('hidden');
+        }
+
+        function handleCanvasClick(e) {
+            if (!isRunning) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            let clickX, clickY;
+            
+            if (e.touches && e.touches.length > 0) {
+                clickX = e.touches[0].clientX - rect.left;
+                clickY = e.touches[0].clientY - rect.top;
+            } else {
+                clickX = e.clientX - rect.left;
+                clickY = e.clientY - rect.top;
+            }
+
+            for (let i = bubbles.length - 1; i >= 0; i--) {
+                const bubble = bubbles[i];
+                if (bubble.isClicked(clickX, clickY)) {
+                    bubble.isPopped = true;
+                    score += Math.floor(60 / bubble.radius); 
+                    scoreValueEl.textContent = score;
+                    playPopSound(bubble.x);
+                    break;
+                }
+            }
+        }
+        
+        function startGame() {
+            // Reset game state before starting
+            if(isRunning) { endGame(); } 
+
+            isRunning = true;
+            score = 0;
+            scoreValueEl.textContent = score;
+            
+            // Update UI for playing state
+            startBtn.textContent = Playing ${currentLevel.toUpperCase()}...;
+            startBtn.disabled = true;
+            startBtn.classList.add('hidden');
+            stopBtn.classList.remove('hidden');
+            gameOverModal.classList.add('hidden');
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height); 
+
+            // Start generators
+            clearInterval(bubbleIntervalId);
+            bubbleIntervalId = setInterval(createBubble, LEVELS[currentLevel].frequency); 
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+        
+        // --- Initialization and Events ---
+
+        function resizeCanvas() {
+            const containerWidth = document.body.clientWidth - 40;
+            const newWidth = Math.min(containerWidth, 480);
+            
+            canvas.width = newWidth;
+            canvas.height = newWidth * (600 / 480);
+        }
+        
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        setupSound();
+        startBtn.addEventListener('click', startGame);
+        stopBtn.addEventListener('click', endGame); // Connect stop button to endGame
+        restartBtn.addEventListener('click', startGame); // Connect restart button to startGame
+        canvas.addEventListener('click', handleCanvasClick);
+        canvas.addEventListener('touchstart', (e) => handleCanvasClick(e));
+        
+        // Level selection handlers
+        levelButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                currentLevel = btn.dataset.level;
+                updateLevelUI(currentLevel);
+                
+                // If game is running, clicking a new level immediately restarts the game
+                if (isRunning) {
+                    startGame();
+                } else {
+                    // Reset start button text if a new level is selected while idle
+                    startBtn.textContent = Start Popping;
+                    startBtn.disabled = false;
+                }
+            });
+        });
+        
+        // Set initial UI state
+        updateLevelUI(currentLevel); 
+    </script>
+</body>
+</html>

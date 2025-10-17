@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Journal & Diary</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Use a gentle, readable font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Custom Styles for a beautiful, calm aesthetic */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* Light Blue/Gray Background */
+        }
+        .container-grid {
+            grid-template-columns: 1fr;
+        }
+        @media (min-width: 768px) {
+            .container-grid {
+                grid-template-columns: 1fr 2fr; /* List on left, Editor on right */
+            }
+        }
+        .journal-entry-card {
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .journal-entry-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(99, 102, 241, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div id="app" class="p-4 md:p-8 min-h-screen">
+        <!-- HEADER WITH DYNAMIC TITLE AND SETTINGS BUTTON -->
+        <h1 class="text-4xl font-bold text-indigo-600 text-center mb-8 flex items-center justify-center space-x-3">
+            <span id="diary-main-title">My Reflective Journal</span>
+            <button id="settings-btn" title="Customize Diary Name" class="text-indigo-400 hover:text-indigo-600 transition duration-150">
+                <!-- Settings Icon (inline SVG) -->
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.527.272 1.042.33 1.524.084z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+            </button>
+            <span class="text-3xl">✨</span>
+        </h1>
+        
+        <!-- Main Application Grid -->
+        <div class="container-grid grid gap-8 max-w-7xl mx-auto">
+            
+            <!-- 1. Journal List Panel (Left Side) -->
+            <div class="bg-white p-6 rounded-xl shadow-lg h-full max-h-[80vh] overflow-y-auto">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-4 border-b pb-2">Past Entries</h2>
+                <div id="entries-list" class="space-y-3">
+                    <!-- Entries will be dynamically loaded here -->
+                    <p id="loading-message" class="text-indigo-400">Loading entries...</p>
+                    <p id="no-entries-message" class="text-gray-500 hidden">You haven't written any entries yet. Start reflecting!</p>
+                </div>
+            </div>
+
+            <!-- 2. Editor/Detail Panel (Right Side) -->
+            <div class="bg-white p-6 rounded-xl shadow-lg">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-6" id="editor-title">New Entry</h2>
+                
+                <form id="journal-form" class="space-y-4">
+                    <!-- Title -->
+                    <div>
+                        <input type="text" id="entry-title" placeholder="A title for your thoughts..." 
+                            required class="w-full p-3 border-2 border-indigo-200 rounded-lg focus:border-indigo-500 focus:ring-indigo-500 transition duration-150 text-lg font-medium">
+                    </div>
+
+                    <!-- Content -->
+                    <div>
+                        <textarea id="entry-content" rows="12" placeholder="Start writing here... What's on your mind today?" 
+                            required class="w-full p-4 border-2 border-indigo-200 rounded-lg focus:border-indigo-500 focus:ring-indigo-500 transition duration-150 resize-y text-gray-800"></textarea>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex justify-end space-x-3">
+                        <button type="button" id="delete-btn" class="hidden px-6 py-3 bg-red-500 text-white font-semibold rounded-lg shadow-md hover:bg-red-600 transition duration-150">
+                            Delete Entry
+                        </button>
+                        <button type="submit" id="save-btn" class="px-8 py-3 bg-indigo-500 text-white font-semibold rounded-lg shadow-xl hover:bg-indigo-600 transition duration-150">
+                            Save Reflection
+                        </button>
+                    </div>
+                </form>
+                
+                <!-- Notification Message Box (used instead of alerts) -->
+                <div id="notification" class="mt-4 p-3 bg-green-100 text-green-700 rounded-lg hidden" role="alert"></div>
+            </div>
+            
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md">
+            <h3 class="text-2xl font-semibold text-gray-700 mb-6">Customize Your Diary Name</h3>
+            <form id="name-form" class="space-y-4">
+                <label for="diary-name-input" class="block text-sm font-medium text-gray-700">Diary Name</label>
+                <input type="text" id="diary-name-input" placeholder="e.g., 'My Safe Space'"
+                    maxlength="30"
+                    class="w-full p-3 border-2 border-indigo-200 rounded-lg focus:border-indigo-500 transition duration-150 text-lg">
+                <div class="flex justify-end space-x-3 pt-4">
+                    <button type="button" id="cancel-name-btn" class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition duration-150">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-6 py-2 bg-indigo-500 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-600 transition duration-150">
+                        Save Name
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- EMBEDDED JAVASCRIPT AND FIREBASE LOGIC -->
+    <script type="module">
+        // --- LOCAL STORAGE CONFIGURATION ---
+        // Define keys for local storage
+        const LOCAL_STORAGE_ENTRIES_KEY = 'personalDiaryEntries';
+        const LOCAL_STORAGE_NAME_KEY = 'customDiaryName';
+        const defaultDiaryName = "My Reflective Journal";
+
+        // UI Elements
+        const entriesListEl = document.getElementById('entries-list');
+        const form = document.getElementById('journal-form');
+        const titleInput = document.getElementById('entry-title');
+        const contentTextarea = document.getElementById('entry-content');
+        const editorTitle = document.getElementById('editor-title');
+        const saveBtn = document.getElementById('save-btn');
+        const deleteBtn = document.getElementById('delete-btn');
+        const notificationEl = document.getElementById('notification');
+        const loadingMessage = document.getElementById('loading-message');
+        const noEntriesMessage = document.getElementById('no-entries-message');
+        
+        // UI Elements for Name Customization
+        const settingsBtn = document.getElementById('settings-btn');
+        const settingsModal = document.getElementById('settings-modal');
+        const cancelNameBtn = document.getElementById('cancel-name-btn');
+        const nameForm = document.getElementById('name-form');
+        const diaryNameInput = document.getElementById('diary-name-input');
+        const diaryMainTitle = document.getElementById('diary-main-title');
+
+        // State
+        // Load existing entries from local storage or start fresh
+        let entries = loadEntriesFromLocal();
+        let currentEntryId = null; // Used for editing existing entries
+
+        // --- LOCAL STORAGE UTILITIES ---
+
+        // Load entries from localStorage
+        function loadEntriesFromLocal() {
+            try {
+                const stored = localStorage.getItem(LOCAL_STORAGE_ENTRIES_KEY);
+                return stored ? JSON.parse(stored) : [];
+            } catch (error) {
+                console.error("Error loading data from local storage:", error);
+                return [];
+            }
+        }
+
+        // Save entries to localStorage
+        function saveEntriesToLocal() {
+            try {
+                localStorage.setItem(LOCAL_STORAGE_ENTRIES_KEY, JSON.stringify(entries));
+                renderEntries();
+            } catch (error) {
+                console.error("Error saving data to local storage:", error);
+                showNotification(`Error: Local storage limit reached. Cannot save.`, 'bg-red-100 text-red-700');
+            }
+        }
+
+        // --- NAME CUSTOMIZATION LOGIC (Updated for Local Storage) ---
+
+        // Load the custom journal name from localStorage
+        function loadJournalName() {
+            const storedName = localStorage.getItem(LOCAL_STORAGE_NAME_KEY);
+            const journalName = storedName || defaultDiaryName;
+
+            // Update UI title and pre-fill the input
+            diaryMainTitle.textContent = journalName;
+            diaryNameInput.value = storedName || ''; 
+        }
+
+        // Save the new custom journal name to localStorage
+        nameForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const newName = diaryNameInput.value.trim() || defaultDiaryName;
+            
+            try {
+                // Save name to local storage
+                localStorage.setItem(LOCAL_STORAGE_NAME_KEY, newName); 
+
+                // Update UI and close modal
+                diaryMainTitle.textContent = newName;
+                settingsModal.classList.add('hidden');
+                showNotification(`Diary name set to '${newName}'.`, 'bg-green-100 text-green-700');
+                
+            } catch (error) {
+                console.error("Error saving journal name:", error);
+                showNotification(`Error saving diary name.`, 'bg-red-100 text-red-700');
+            }
+        });
+
+        // Modal visibility listeners
+        settingsBtn.addEventListener('click', () => {
+            // Ensure input is pre-filled/up-to-date when opening
+            diaryNameInput.value = localStorage.getItem(LOCAL_STORAGE_NAME_KEY) || '';
+            settingsModal.classList.remove('hidden');
+        });
+
+        cancelNameBtn.addEventListener('click', () => {
+            settingsModal.classList.add('hidden');
+        });
+
+
+        // --- CRUD LOGIC (Updated for Local Storage) ---
+
+        // 1. CREATE / UPDATE: Save or Update Entry
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const entryData = {
+                title: titleInput.value.trim(),
+                content: contentTextarea.value,
+                timestamp: Date.now() // Use JavaScript timestamp instead of serverTimestamp
+            };
+
+            if (currentEntryId) {
+                // Update existing entry
+                const index = entries.findIndex(entry => entry.id === currentEntryId);
+                if (index !== -1) {
+                    // Update content and timestamp for edited entry
+                    entries[index].title = entryData.title;
+                    entries[index].content = entryData.content;
+                    entries[index].timestamp = entryData.timestamp; 
+                    showNotification("Entry updated successfully! Keep reflecting.", 'bg-green-100 text-green-700');
+                }
+            } else {
+                // Create new entry
+                entryData.id = Date.now().toString() + Math.random().toString(16).slice(2); // Simple unique ID
+                entries.push(entryData);
+                showNotification("New entry saved! Your thoughts are safe.", 'bg-green-100 text-green-700');
+            }
+            
+            saveEntriesToLocal();
+            resetForm();
+        });
+
+        // 2. DELETE: Delete Entry
+        deleteBtn.addEventListener('click', () => {
+            if (!currentEntryId) return;
+
+            // Simple Confirmation UI (instead of window.confirm)
+            const confirmation = confirm("Are you sure you want to delete this reflection? This cannot be undone."); 
+            if (confirmation) {
+                entries = entries.filter(entry => entry.id !== currentEntryId);
+                saveEntriesToLocal();
+                showNotification("Entry deleted successfully.", 'bg-yellow-100 text-yellow-700');
+                resetForm();
+            }
+        });
+
+
+        // --- UI RENDERING AND INTERACTION ---
+
+        // Render the list of entries
+        function renderEntries() {
+            // Sort by timestamp descending (newest first)
+            entries.sort((a, b) => b.timestamp - a.timestamp);
+
+            entriesListEl.innerHTML = ''; // Clear the list
+
+            // Hide loading message and show no entries message if needed
+            loadingMessage.classList.add('hidden');
+            noEntriesMessage.classList.toggle('hidden', entries.length > 0);
+
+            entries.forEach(entry => {
+                const date = new Date(entry.timestamp).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+                
+                const card = document.createElement('div');
+                card.className = `journal-entry-card p-4 rounded-lg border border-gray-100 shadow-sm bg-indigo-50 hover:bg-indigo-100`;
+                card.innerHTML = `
+                    <p class="text-lg font-semibold text-indigo-800 truncate">${entry.title}</p>
+                    <p class="text-sm text-gray-500">${date}</p>
+                `;
+                card.addEventListener('click', () => selectEntry(entry));
+                entriesListEl.appendChild(card);
+            });
+        }
+
+        // When a user clicks an entry in the list
+        function selectEntry(entry) {
+            currentEntryId = entry.id;
+            titleInput.value = entry.title;
+            contentTextarea.value = entry.content;
+            
+            // Update UI for editing mode
+            editorTitle.textContent = "Edit Entry";
+            saveBtn.textContent = "Update Entry";
+            deleteBtn.classList.remove('hidden');
+
+            // Scroll to the editor on mobile
+            document.getElementById('editor-title').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Reset the editor form to create a new entry
+        function resetForm() {
+            form.reset();
+            currentEntryId = null;
+            
+            // Update UI for creation mode
+            editorTitle.textContent = "New Entry";
+            saveBtn.textContent = "Save Reflection";
+            deleteBtn.classList.add('hidden');
+        }
+        
+        // Simple Confirmation/Notification function
+        function showNotification(message, className) {
+            notificationEl.textContent = message;
+            notificationEl.className = `mt-4 p-3 rounded-lg ${className}`;
+            notificationEl.classList.remove('hidden');
+            
+            // Hide after 4 seconds
+            setTimeout(() => {
+                notificationEl.classList.add('hidden');
+            }, 4000);
+        }
+
+        // Initialize the app on page load
+        loadJournalName();
+        renderEntries(); // Initial render to show any existing entries
+    </script>
+</body>
+</html>

@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mysa: AI Emotional Compass (Voice Enabled)</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom Font */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f7f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .chat-container {
+            width: 100%;
+            max-width: 420px;
+            height: 80vh;
+            display: flex;
+            flex-direction: column;
+            background: white;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            border: 1px solid #e5e7eb;
+        }
+
+        #chat-window {
+            flex-grow: 1;
+            padding: 1rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            background-color: #fafafa;
+        }
+
+        /* Chat Message Styles */
+        .message {
+            max-width: 85%;
+            padding: 0.75rem 1rem;
+            border-radius: 1.5rem;
+            line-height: 1.4;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            word-wrap: break-word;
+        }
+
+        .user-message {
+            align-self: flex-end;
+            background-color: #6366f1; /* Indigo 500 */
+            color: white;
+            border-bottom-right-radius: 0.375rem; /* Small corner on the bottom-right */
+        }
+
+        .bot-message {
+            align-self: flex-start;
+            background-color: #eef2ff; /* Indigo 50 */
+            color: #1e293b; /* Slate 800 */
+            border-bottom-left-radius: 0.375rem; /* Small corner on the bottom-left */
+            position: relative;
+            padding-right: 3rem; /* Space for the play button */
+        }
+
+        .play-button {
+            position: absolute;
+            right: 0.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #6366f1;
+            padding: 0.25rem;
+            border-radius: 50%;
+            transition: background-color 0.2s;
+        }
+        .play-button:hover { background-color: #c7d2fe; }
+
+        /* Crisis Alert Box */
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
+        .crisis-alert {
+            background-color: #fee2e2; /* Red 100 */
+            border: 3px solid #ef4444; /* Red 500 */
+            color: #b91c1c; /* Red 700 */
+            padding: 1rem;
+            border-radius: 0.75rem;
+            animation: pulse 1.5s infinite;
+            font-weight: 600;
+        }
+
+        /* Typing Indicator (simplified) */
+        .typing-indicator {
+            align-self: flex-start;
+            background-color: #eef2ff;
+            color: #6366f1;
+            padding: 0.5rem 1rem;
+            border-radius: 1.5rem;
+            animation: fadein 0.5s;
+        }
+
+        @keyframes fadein {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Scrollbar Styling */
+        #chat-window::-webkit-scrollbar {
+            width: 8px;
+        }
+        #chat-window::-webkit-scrollbar-thumb {
+            background-color: #d1d5db;
+            border-radius: 4px;
+        }
+        #chat-window::-webkit-scrollbar-track {
+            background: #fafafa;
+        }
+
+        /* Input area styling */
+        #input-form {
+            display: flex;
+            padding: 1rem;
+            border-top: 1px solid #e5e7eb;
+            background-color: #ffffff;
+        }
+
+        #user-input {
+            flex-grow: 1;
+            padding: 0.75rem 1rem;
+            border: 1px solid #d1d5db;
+            border-radius: 9999px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        #user-input:focus {
+            border-color: #6366f1; /* Indigo 500 */
+        }
+
+        .input-button {
+            margin-left: 0.5rem;
+            color: white;
+            border-radius: 9999px;
+            padding: 0.75rem;
+            transition: background-color 0.2s;
+            line-height: 1;
+        }
+
+        #send-button {
+            background-color: #6366f1;
+        }
+        #send-button:hover {
+            background-color: #4f46e5;
+        }
+        
+        #mic-button {
+            background-color: #ef4444; /* Red for recording */
+        }
+        #mic-button:hover {
+            background-color: #dc2626;
+        }
+        #mic-button.recording {
+            background-color: #f59e0b; /* Amber when active */
+            animation: pulse 1s infinite;
+        }
+        
+    </style>
+</head>
+<body>
+
+<div class="chat-container">
+    <!-- Header -->
+    <div class="p-4 bg-indigo-600 text-white rounded-t-2xl flex flex-col items-center shadow-lg">
+        <div class="flex items-center w-full justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2a10 10 0 0 0 10 10 4 4 0 0 1-4 4H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8z"/><path d="M8 7v6"/><path d="M16 11H9"/>
+            </svg>
+            <h1 class="text-xl font-bold">Mysa: Emotional Compass</h1>
+            <button id="logout-button" class="ml-auto text-sm bg-indigo-500 hover:bg-indigo-700 py-1 px-3 rounded-full">Logout</button>
+        </div>
+        <!-- AUTH STATUS BAR -->
+        <p id="auth-status" class="text-sm mt-1 text-green-300">Authentication Success. Chat history active.</p>
+    </div>
+
+    <!-- Chat Window -->
+    <div id="chat-window">
+        <!-- Messages will be injected here by the script -->
+    </div>
+
+    <!-- Input Form -->
+    <form id="input-form">
+        <button type="button" id="mic-button" class="input-button" disabled>
+            <!-- Microphone Icon -->
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                <line x1="12" y1="19" x2="12" y2="22"></line>
+            </svg>
+        </button>
+        <input type="text" id="user-input" placeholder="Share how you are feeling..." autocomplete="off" disabled>
+        <button type="submit" id="send-button" class="input-button" disabled>
+            <!-- Send Icon -->
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+        </button>
+    </form>
+</div>
+
+<!-- All application logic is now modularized within this single script block -->
+<script type="module">
+    // ========================================================================
+    // --- 0. UTILITY FUNCTIONS (For TTS Audio Handling) ---
+    // ========================================================================
+
+    // Converts base64 to ArrayBuffer
+    function base64ToArrayBuffer(base64) {
+        const binaryString = atob(base64);
+        const len = binaryString.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
+        return bytes.buffer;
+    }
+
+    // Converts PCM audio data to a WAV Blob (Signed 16-bit Little Endian PCM)
+    function pcmToWav(pcmData, sampleRate) {
+        const numChannels = 1;
+        const bytesPerSample = 2; // Int16Array
+        const blockAlign = numChannels * bytesPerSample;
+        const byteRate = sampleRate * blockAlign;
+        const buffer = new ArrayBuffer(44 + pcmData.byteLength);
+        const view = new DataView(buffer);
+        let offset = 0;
+
+        // RIFF chunk
+        view.setUint32(offset, 0x52494646, false); offset += 4; // "RIFF"
+        view.setUint32(offset, 36 + pcmData.byteLength, true); offset += 4; // fileSize
+        view.setUint32(offset, 0x57415645, false); offset += 4; // "WAVE"
+
+        // fmt chunk
+        view.setUint32(offset, 0x666d7420, false); offset += 4; // "fmt "
+        view.setUint32(offset, 16, true); offset += 4; // chunkSize (16 for PCM)
+        view.setUint16(offset, 1, true); offset += 2; // wFormatTag (1 for PCM)
+        view.setUint16(offset, numChannels, true); offset += 2; // nChannels
+        view.setUint32(offset, sampleRate, true); offset += 4; // dwSamplesPerSec
+        view.setUint32(offset, byteRate, true); offset += 4; // dwAvgBytesPerSec
+        view.setUint16(offset, blockAlign, true); offset += 2; // wBlockAlign
+        view.setUint16(offset, bytesPerSample * 8, true); offset += 2; // wBitsPerSample (16)
+
+        // data chunk
+        view.setUint32(offset, 0x64617461, false); offset += 4; // "data"
+        view.setUint32(offset, pcmData.byteLength, true); offset += 4; // chunkDataSize
+        
+        // Copy PCM data
+        const pcmArray = new Int16Array(buffer, offset);
+        pcmArray.set(pcmData);
+
+        return new Blob([view], { type: 'audio/wav' });
+    }
+
+    // ========================================================================
+    // --- 1. FIREBASE SERVICE (Initialization and Persistence) ---
+    // ========================================================================
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, setPersistence, inMemoryPersistence, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, collection, query, onSnapshot, serverTimestamp, getDocs, updateDoc, deleteDoc, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // Global instances for Firebase
+    let dbInstance, authInstance, userIdInstance = null;
+    let isAuthReady = false; // CRITICAL FLAG: Set true only after onAuthStateChanged fires
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+    // Fallback Config (for environment without __firebase_config)
+    const FALLBACK_FIREBASE_CONFIG = {
+        apiKey: "AIzaSyBl5uX4_vMoTP3Ng6NmPi5EP6_t_oG6fmA",
+        authDomain: "mentalhealth-96c08.firebaseapp.com",
+        projectId: "mentalhealth-96c08",
+        storageBucket: "mentalhealth-96c08.firebasestorage.app",
+        messagingSenderId: "851030505183",
+        appId: "1:851030505183:web:8d0a63ae85a4addfd6db6a",
+    };
+
+    // UI Elements
+    const chatWindow = document.getElementById('chat-window');
+    const userInput = document.getElementById('user-input');
+    const sendButton = document.getElementById('send-button');
+    const micButton = document.getElementById('mic-button');
+    const chatForm = document.getElementById('input-form'); 
+    const logoutButton = document.getElementById('logout-button');
+
+    // System Status Message
+    function updateStatus(message) {
+        const statusElement = document.getElementById('auth-status');
+        if (statusElement) {
+            statusElement.textContent = message;
+            statusElement.classList.remove('text-yellow-200', 'text-red-300', 'text-green-300');
+            if (message.includes('Success')) statusElement.classList.add('text-green-300');
+            else if (message.includes('Failed')) statusElement.classList.add('text-red-300');
+            else statusElement.classList.add('text-yellow-200');
+        }
+    }
+
+    /** Sets up a real-time listener for the chat messages. */
+    function setupChatListener() {
+        if (!dbInstance || !userIdInstance) {
+            console.error("Firestore not ready. Cannot set up listener.");
+            return;
+        }
+
+        const messagesRef = collection(dbInstance, "artifacts", appId, "users", userIdInstance, "chats");
+        const q = query(messagesRef);
+
+        onSnapshot(q, (snapshot) => {
+            let messages = [];
+            snapshot.forEach(doc => {
+                messages.push({ id: doc.id, ...doc.data() });
+            });
+
+            messages.sort((a, b) => {
+                const aTime = a.timestamp ? a.timestamp.toDate().getTime() : Infinity;
+                const bTime = b.timestamp ? b.timestamp.toDate().getTime() : Infinity;
+                return aTime - bTime;
+            });
+
+            renderChatHistory(messages);
+        }, (error) => {
+            console.error("Error listening to chat messages:", error);
+            if (!document.querySelector('.firestore-error-alert')) {
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'crisis-alert firestore-error-alert';
+                alertDiv.innerHTML = `<p class="font-bold">⚠️ Data Error: Permission Denied</p><p class="text-sm mt-1">Chat history is not loading. Check your Firestore Security Rules.</p>`;
+                chatWindow.prepend(alertDiv);
+            }
+        });
+    }
+
+    /** Initializes Firebase and authenticates the user. */
+    async function initializeFirebase() {
+        let firebaseConfig;
+        
+        if (typeof __firebase_config !== 'undefined') {
+            try { firebaseConfig = JSON.parse(__firebase_config); } 
+            catch (e) { firebaseConfig = FALLBACK_FIREBASE_CONFIG; }
+        } else {
+            firebaseConfig = FALLBACK_FIREBASE_CONFIG;
+        }
+        
+        updateStatus("Checking authentication status..."); 
+
+        try {
+            const app = initializeApp(firebaseConfig);
+            const db = getFirestore(app);
+            const auth = getAuth(app);
+            
+            // Set global instances immediately
+            dbInstance = db;
+            authInstance = auth; 
+
+            // CRITICAL: Set persistence to inMemory for iframe environments BEFORE sign-in
+            await setPersistence(auth, inMemoryPersistence);
+
+            // Authentication attempt
+            if (typeof __initial_auth_token !== 'undefined') {
+                await signInWithCustomToken(auth, __initial_auth_token);
+            } else {
+                await signInAnonymously(auth);
+            }
+            
+            // Wait for auth state to be established and finalize setup
+            onAuthStateChanged(auth, (user) => {
+                const finalUserId = user ? user.uid : crypto.randomUUID();
+                
+                userIdInstance = finalUserId;
+                isAuthReady = true; 
+                updateStatus("Authentication Success. Chat history active."); 
+                
+                // Enable inputs after successful authentication
+                userInput.disabled = false;
+                sendButton.disabled = false;
+                micButton.disabled = !isSTTSupported; 
+                userInput.focus();
+
+                setupChatListener(); // Start listening for data
+            });
+
+        } catch (error) {
+            console.error("Firebase Initialization Failed (Auth Error):", error);
+            isAuthReady = false; 
+            updateStatus(`Auth Failed. History disabled: ${error.code}`); 
+        }
+    }
+
+    // ========================================================================
+    // --- 2. GEMINI/TTS/STT SERVICES (AI & Voice Handling) ---
+    // ========================================================================
+    const API_KEY = "AIzaSyAadlU3SSswvt06WeO44pIHZF0DcdLHlWw"; 
+    const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${API_KEY}`;
+    const TTS_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${API_KEY}`;
+    
+    const systemPrompt = "You are Mysa, an AI-powered Emotional Compass. Your goal is to provide empathetic, non-judgemental, and proactive mental health support. Always maintain a warm, supportive, and conversational tone. Your responses should be brief, validating, and encouraging. Focus on validating feelings and offering small, actionable coping strategies (like deep breaths, light stretching, or journaling prompts) after the initial validation. NEVER offer professional medical advice. After three turns, gently suggest checking their daily mood in a separate feature.";
+    const CRISIS_KEYWORDS = ['suicide', 'end it all', 'kill myself', 'hurt myself', 'want to die', 'harm myself'];
+    
+    // Voice State
+    let isRecording = false;
+    let isBotSpeaking = false; // New flag for V2V interaction
+    const isSTTSupported = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
+    const recognition = isSTTSupported ? new (window.webkitSpeechRecognition || window.SpeechRecognition)() : null;
+    
+    let currentAudio = null;
+
+    /** Fetches the AI (text) response. */
+    async function fetchGeminiResponse(chatHistory, retries = 3) {
+        const payload = {
+            contents: chatHistory,
+            systemInstruction: { parts: [{ text: systemPrompt }] },
+        };
+
+        for (let i = 0; i < retries; i++) {
+            try {
+                const response = await fetch(GEMINI_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const result = await response.json();
+                const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (text) return { text };
+                throw new Error("Invalid response format from Gemini API.");
+            } catch (error) {
+                if (i < retries - 1) await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000));
+                else throw error;
+            }
+        }
+    }
+
+    /** Fetches the TTS audio data for a given text. */
+    async function fetchTtsAudio(text) {
+        const payload = {
+            contents: [{ parts: [{ text: text }] }],
+            generationConfig: {
+                responseModalities: ["AUDIO"],
+                speechConfig: {
+                    voiceConfig: {
+                        prebuiltVoiceConfig: { voiceName: "Kore" } // Using Kore voice
+                    }
+                }
+            },
+        };
+
+        const response = await fetch(TTS_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) throw new Error(`TTS HTTP error! status: ${response.status}`);
+        const result = await response.json();
+        const part = result?.candidates?.[0]?.content?.parts?.[0];
+        
+        if (!part || !part.inlineData || !part.inlineData.data) {
+            throw new Error("Invalid TTS response format.");
+        }
+
+        const audioData = part.inlineData.data;
+        const mimeType = part.inlineData.mimeType; // e.g., audio/L16;rate=24000
+        const sampleRateMatch = mimeType.match(/rate=(\d+)/);
+        const sampleRate = sampleRateMatch ? parseInt(sampleRateMatch[1], 10) : 24000;
+
+        const pcmData = base64ToArrayBuffer(audioData);
+        const pcm16 = new Int16Array(pcmData);
+        const wavBlob = pcmToWav(pcm16, sampleRate);
+        
+        return URL.createObjectURL(wavBlob);
+    }
+    
+    /** Plays audio from a URL, stopping any currently playing audio. */
+    function playAudioFromUrl(audioUrl, onFinish) {
+        if (currentAudio) {
+            currentAudio.pause();
+            currentAudio.currentTime = 0;
+        }
+        currentAudio = new Audio(audioUrl);
+        isBotSpeaking = true;
+        
+        currentAudio.onended = () => {
+            isBotSpeaking = false;
+            // Clear the object URL to free memory
+            URL.revokeObjectURL(audioUrl); 
+            if (onFinish) onFinish();
+        };
+        currentAudio.onerror = (e) => {
+            console.error("Audio playback error.", e);
+            isBotSpeaking = false;
+            // Clear the object URL to free memory
+            URL.revokeObjectURL(audioUrl); 
+            if (onFinish) onFinish();
+        }
+        
+        // Attempt to start playback, handling potential AutoPlay policies
+        currentAudio.play().catch(e => {
+            console.warn("Autoplay was prevented (requires user interaction first):", e);
+            isBotSpeaking = false;
+            if (onFinish) onFinish();
+        });
+    }
+
+    // Speech-to-Text Setup
+    if (isSTTSupported) {
+        recognition.continuous = false;
+        recognition.lang = 'en-US';
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+
+        recognition.onstart = () => {
+            isRecording = true;
+            micButton.classList.add('recording');
+            userInput.placeholder = "Listening... Speak now.";
+            userInput.disabled = true;
+            sendButton.disabled = true;
+        };
+
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            userInput.value = transcript;
+            sendMessage(transcript, true); // Send message from voice
+        };
+
+        recognition.onend = () => {
+            isRecording = false;
+            micButton.classList.remove('recording');
+            // Controls re-enabled by sendMessage's finishTurn function
+        };
+
+        recognition.onerror = (event) => {
+            console.error('Speech Recognition Error:', event.error);
+            const errorMsg = `Voice input error: ${event.error}. Please check your microphone permissions.`;
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'crisis-alert fixed bottom-5 right-5 z-50';
+            alertDiv.innerHTML = `<p class="font-bold">Microphone Error</p><p class="text-sm mt-1">${errorMsg}</p>`;
+            document.body.appendChild(alertDiv);
+            setTimeout(() => document.body.removeChild(alertDiv), 5000);
+            
+            // Re-enable inputs
+            if (isAuthReady) {
+                userInput.placeholder = "Share how you are feeling...";
+                userInput.disabled = false;
+                sendButton.disabled = false;
+                micButton.disabled = !isSTTSupported;
+            }
+        };
+    } else {
+        micButton.style.display = 'none';
+        updateStatus("Authentication Success. Voice input not supported by browser.");
+        console.warn("Speech Recognition not supported in this browser.");
+    }
+    
+    function toggleRecording() {
+        if (!isAuthReady) return; 
+
+        // CRITICAL: If bot is speaking, stop the audio immediately
+        if (isBotSpeaking && currentAudio) {
+            currentAudio.pause();
+            currentAudio.currentTime = 0;
+            isBotSpeaking = false;
+        }
+
+        if (isRecording) {
+            recognition.stop();
+        } else {
+            try {
+                recognition.start();
+            } catch (e) {
+                console.error("Recognition start failed:", e);
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'crisis-alert fixed bottom-5 right-5 z-50';
+                alertDiv.innerHTML = `<p class="font-bold">Microphone Start Failed</p><p class="text-sm mt-1">Please ensure your browser has microphone permission enabled for this page.</p>`;
+                document.body.appendChild(alertDiv);
+                setTimeout(() => document.body.removeChild(alertDiv), 5000);
+            }
+        }
+    }
+
+    // ========================================================================
+    // --- 3. MAIN APPLICATION LOGIC (UI & Chat Flow) ---
+    // ========================================================================
+    
+    let currentChatHistory = [];
+
+    /** Renders the chat messages to the UI. */
+    function renderChatHistory(messages) {
+        currentChatHistory = messages.map(msg => ({ 
+            role: msg.role === 'bot' ? 'model' : 'user', 
+            parts: [{ text: msg.text }] 
+        }));
+
+        const permanentAlert = document.querySelector('.firestore-error-alert');
+        chatWindow.innerHTML = ''; 
+        if (permanentAlert) chatWindow.appendChild(permanentAlert);
+
+        if (messages.length === 0 && !document.querySelector('.crisis-alert')) {
+             chatWindow.innerHTML += `<div class="bot-message">Hi there! I'm Mysa. I'm here to listen without judgment. How are you feeling right now?</div>`;
+        }
+
+        messages.forEach(msg => {
+            if (msg.text) {
+                const isUser = msg.role === 'user';
+                const messageDiv = document.createElement('div');
+                
+                if (msg.isCrisis) {
+                    messageDiv.className = 'crisis-alert';
+                    messageDiv.innerHTML = `
+                        <p class="mb-2 font-bold text-lg">⚠️ URGENT CRISIS ALERT ⚠️</p>
+                        <p class="text-base">${msg.text}</p>
+                        <p class="mt-3 text-sm">Please reach out immediately:</p>
+                        <ul class="list-disc list-inside ml-2 text-sm">
+                            <li>**India Suicide Prevention:** 9152987821</li>
+                            <li>**US National Suicide & Crisis:** 988</li>
+                        </ul>
+                    `;
+                } else {
+                    messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
+                    messageDiv.textContent = msg.text;
+
+                    // Manual Playback Button for history (not for V2V immediate play)
+                    if (!isUser && msg.audioUrl) {
+                        const playButton = document.createElement('button');
+                        playButton.className = 'play-button';
+                        playButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zm2.46-7.12l1.41-1.41 2.55 2.55 2.55-2.55 1.41 1.41-3.96 3.96zM15.5 4l-1-1h-5l-1 1H5v2h14V4z"/></svg>`;
+                        playButton.title = "Play Audio";
+                        
+                        // Audio playback logic (Manual Trigger)
+                        playButton.onclick = () => {
+                            playButton.disabled = true; // Disable while playing
+                            playAudioFromUrl(msg.audioUrl, () => {
+                                playButton.disabled = false;
+                                playButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zm2.46-7.12l1.41-1.41 2.55 2.55 2.55-2.55 1.41 1.41-3.96 3.96zM15.5 4l-1-1h-5l-1 1H5v2h14V4z"/></svg>`;
+                            });
+                            playButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="12" cy="12" r="10"/><path fill="white" d="M10 9h1a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1zm3 0h1a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1z"/></svg>`; 
+                        };
+                        messageDiv.appendChild(playButton);
+                    }
+                }
+                chatWindow.appendChild(messageDiv);
+            }
+        });
+
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+
+    /** Main function to send a user message and get a bot response. */
+    async function sendMessage(text, isVoiceInput) {
+        if (!isAuthReady || !text.trim()) return; 
+        if (isVoiceInput) userInput.value = text;
+        
+        userInput.value = ''; 
+
+        // 1. Check for Crisis Keywords
+        const isCrisis = CRISIS_KEYWORDS.some(keyword => text.toLowerCase().includes(keyword));
+
+        // 2. Save user message to DB
+        await addDoc(collection(dbInstance, "artifacts", appId, "users", userIdInstance, "chats"), {
+            text: text,
+            role: 'user',
+            isCrisis: false,
+            timestamp: serverTimestamp(),
+        });
+        
+        // Disable input while API is busy (user cannot type or talk during bot's turn)
+        userInput.disabled = true;
+        sendButton.disabled = true;
+        micButton.disabled = true;
+        userInput.placeholder = "Awaiting response...";
+
+        // Function to re-enable controls after bot's turn (either text or audio)
+        const finishTurn = () => {
+            userInput.placeholder = "Share how you are feeling...";
+            userInput.disabled = false;
+            sendButton.disabled = false;
+            micButton.disabled = !isSTTSupported;
+            userInput.focus();
+        };
+
+        // 3. Handle Crisis Detection
+        if (isCrisis) {
+            const crisisText = `It sounds like you are going through immense pain right now, and I want you to know that help is available. Please reach out to the resources below immediately. You do not have to go through this alone.`;
+            await addDoc(collection(dbInstance, "artifacts", appId, "users", userIdInstance, "chats"), {
+                text: crisisText,
+                role: 'bot',
+                isCrisis: true,
+                timestamp: serverTimestamp(),
+            });
+            finishTurn(); // Re-enable immediately on crisis
+            return;
+        }
+
+        // 4. Show typing indicator
+        const typingIndicator = document.createElement('div');
+        typingIndicator.className = 'typing-indicator';
+        typingIndicator.textContent = 'Mysa is typing...';
+        chatWindow.appendChild(typingIndicator);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+
+        try {
+            // 5. Fetch AI text response using the current, synchronized history
+            const textResponse = await fetchGeminiResponse(currentChatHistory);
+            
+            // 6. Fetch TTS audio
+            const audioUrl = await fetchTtsAudio(textResponse.text);
+
+            // 7. Remove typing indicator
+            if (chatWindow.contains(typingIndicator)) {
+                chatWindow.removeChild(typingIndicator);
+            }
+
+            // 8. Save bot response to DB with audio URL (Triggers onSnapshot/renderChatHistory)
+            await addDoc(collection(dbInstance, "artifacts", appId, "users", userIdInstance, "chats"), {
+                text: textResponse.text,
+                audioUrl: audioUrl,
+                role: 'bot',
+                isCrisis: false,
+                timestamp: serverTimestamp(),
+            });
+
+            // 9. IMMEDIATE PLAYBACK: Play audio and then re-enable controls
+            playAudioFromUrl(audioUrl, finishTurn);
+            
+        } catch (error) {
+            console.error("Chat/TTS Error:", error);
+            if (chatWindow.contains(typingIndicator)) {
+                chatWindow.removeChild(typingIndicator);
+            }
+            const errorMsg = `Sorry, a voice or API error occurred. Please check console for details on: ${error.message}`;
+            await addDoc(collection(dbInstance, "artifacts", appId, "users", userIdInstance, "chats"), {
+                text: errorMsg,
+                role: 'bot',
+                isCrisis: false,
+                timestamp: serverTimestamp(),
+            });
+            finishTurn(); // Re-enable controls immediately on error
+        }
+    }
+
+    /** Handles user logout/sign out */
+    async function handleLogout() {
+        if (authInstance) {
+            try {
+                await signOut(authInstance);
+                // Clear UI and restart initialization
+                chatWindow.innerHTML = '';
+                updateStatus("Logged out. Restarting session...");
+                initializeFirebase();
+            } catch (error) {
+                console.error("Logout failed:", error);
+            }
+        }
+    }
+
+
+    // --- Initialization and Event Listeners ---
+
+    initializeFirebase();
+    
+    // Attach submit listener to the form element
+    if (chatForm) {
+        chatForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const text = userInput.value;
+            sendMessage(text, false);
+        });
+    }
+
+    // Attach click listeners
+    micButton.addEventListener('click', toggleRecording);
+    logoutButton.addEventListener('click', handleLogout);
+
+</script>
+</body>
+</html>
