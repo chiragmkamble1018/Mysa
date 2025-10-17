@@ -276,22 +276,23 @@
     // --- 1. FIREBASE SERVICE (Initialization and Persistence) ---
     // ========================================================================
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, setPersistence, inMemoryPersistence, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, doc, setDoc, collection, query, onSnapshot, serverTimestamp, getDocs, updateDoc, deleteDoc, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged, setPersistence, inMemoryPersistence, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, collection, query, onSnapshot, serverTimestamp, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     // Global instances for Firebase
     let dbInstance, authInstance, userIdInstance = null;
-    let isAuthReady = false; // CRITICAL FLAG: Set true only after onAuthStateChanged fires
+    let isAuthReady = false; 
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
-    // Fallback Config (for environment without __firebase_config)
+    // 🌟 This is the configuration for your 'mysaai' project. 🌟
     const FALLBACK_FIREBASE_CONFIG = {
-        apiKey: "AIzaSyBl5uX4_vMoTP3Ng6NmPi5EP6_t_oG6fmA",
-        authDomain: "mentalhealth-96c08.firebaseapp.com",
-        projectId: "mentalhealth-96c08",
-        storageBucket: "mentalhealth-96c08.firebasestorage.app",
-        messagingSenderId: "851030505183",
-        appId: "1:851030505183:web:8d0a63ae85a4addfd6db6a",
+        apiKey: "AIzaSyAirlKxpfbRi_SrxzSSIpMM-qcQYYVg7aQ",
+        authDomain: "mysaai.firebaseapp.com",
+        projectId: "mysaai",
+        storageBucket: "mysaai.firebasestorage.app",
+        messagingSenderId: "659767637545",
+        appId: "1:659767637545:web:da9ee1264e5b568e86ce38",
+        measurementId: "G-ZK3BCN9QRH" 
     };
 
     // UI Elements
@@ -309,7 +310,7 @@
             statusElement.textContent = message;
             statusElement.classList.remove('text-yellow-200', 'text-red-300', 'text-green-300');
             if (message.includes('Success')) statusElement.classList.add('text-green-300');
-            else if (message.includes('Failed')) statusElement.classList.add('text-red-300');
+            else if (message.includes('Failed') || message.includes('Error')) statusElement.classList.add('text-red-300');
             else statusElement.classList.add('text-yellow-200');
         }
     }
@@ -336,7 +337,9 @@
                 return aTime - bTime;
             });
 
-            renderChatHistory(messages);
+            if (chatWindow.children.length < 3 || chatWindow.children.length !== messages.length + 1) { 
+                 renderChatHistory(messages);
+            }
         }, (error) => {
             console.error("Error listening to chat messages:", error);
             if (!document.querySelector('.firestore-error-alert')) {
@@ -350,13 +353,11 @@
 
     /** Initializes Firebase and authenticates the user. */
     async function initializeFirebase() {
-        let firebaseConfig;
+        let firebaseConfig = FALLBACK_FIREBASE_CONFIG;
         
         if (typeof __firebase_config !== 'undefined') {
             try { firebaseConfig = JSON.parse(__firebase_config); } 
             catch (e) { firebaseConfig = FALLBACK_FIREBASE_CONFIG; }
-        } else {
-            firebaseConfig = FALLBACK_FIREBASE_CONFIG;
         }
         
         updateStatus("Checking authentication status..."); 
@@ -366,21 +367,15 @@
             const db = getFirestore(app);
             const auth = getAuth(app);
             
-            // Set global instances immediately
             dbInstance = db;
             authInstance = auth; 
 
-            // CRITICAL: Set persistence to inMemory for iframe environments BEFORE sign-in
             await setPersistence(auth, inMemoryPersistence);
 
-            // Authentication attempt
-            if (typeof __initial_auth_token !== 'undefined') {
-                await signInWithCustomToken(auth, __initial_auth_token);
-            } else {
-                await signInAnonymously(auth);
-            }
+            // FIX: Using anonymous sign-in, which should resolve the admin error 
+            // if Anonymous Auth is enabled in the Firebase Console.
+            await signInAnonymously(auth);
             
-            // Wait for auth state to be established and finalize setup
             onAuthStateChanged(auth, (user) => {
                 const finalUserId = user ? user.uid : crypto.randomUUID();
                 
@@ -388,52 +383,67 @@
                 isAuthReady = true; 
                 updateStatus("Authentication Success. Chat history active."); 
                 
-                // Enable inputs after successful authentication
                 userInput.disabled = false;
                 sendButton.disabled = false;
                 micButton.disabled = !isSTTSupported; 
                 userInput.focus();
-                
-                // Start continuous listening AFTER user is authenticated and UI is ready
-                startContinuousListening();
 
-                setupChatListener(); // Start listening for data
+                setupChatListener(); 
             });
 
         } catch (error) {
             console.error("Firebase Initialization Failed (Auth Error):", error);
             isAuthReady = false; 
-            updateStatus(`Auth Failed. History disabled: ${error.code}`); 
+            
+            if (error.code === 'auth/operation-not-allowed') {
+                updateStatus("Auth Failed. Enable Anonymous Sign-in in Firebase Console.");
+            } else if (error.code === 'auth/api-key-not-valid') {
+                updateStatus("Auth Failed. History disabled: Invalid Firebase API Key.");
+            } else {
+                // If it's still admin-restricted-operation here, the Firebase Web API Key
+                // being used (AIzaSyAirlKxpfbRi_SrxzSSIpMM-qcQYYVg7aQ) is likely being interpreted
+                // as a server-side key by Google Identity Toolkit.
+                updateStatus(`Auth Failed. History disabled: ${error.code}. Verify API Key type.`); 
+            }
         }
     }
 
     // ========================================================================
     // --- 2. GEMINI/TTS/STT SERVICES (AI & Voice Handling) ---
     // ========================================================================
-    const API_KEY = "AIzaSyAadlU3SSswvt06WeO44pIHZF0DcdLHlWw"; 
+    // 🔴 CRITICAL: REPLACE "YOUR_GEMINI_API_KEY_HERE" WITH YOUR ACTUAL GEMINI API Key!
+    const API_KEY = "AIzaSyBU_Llr_GoyNasbEwC1-lfvTbCcRrm4YmY"; 
+    
     const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${API_KEY}`;
     const TTS_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${API_KEY}`;
     
+    // CRITICAL CHECK: Warn user about missing Gemini API Key
+    if (API_KEY === "YOUR_GEMINI_API_KEY_HERE") {
+         console.error("Gemini API Error: Please replace 'YOUR_GEMINI_API_KEY_HERE' with your actual Gemini API Key.");
+    }
+
     const systemPrompt = "You are Mysa, an AI-powered Emotional Compass. Your goal is to provide empathetic, non-judgemental, and proactive mental health support. Always maintain a warm, supportive, and conversational tone. Your responses should be brief, validating, and encouraging. Focus on validating feelings and offering small, actionable coping strategies (like deep breaths, light stretching, or journaling prompts) after the initial validation. NEVER offer professional medical advice. After three turns, gently suggest checking their daily mood in a separate feature.";
     const CRISIS_KEYWORDS = ['suicide', 'end it all', 'kill myself', 'hurt myself', 'want to die', 'harm myself'];
-    const WAKE_WORD = "hey mysa";
     
     // Voice State
     let isRecording = false;
     let isBotSpeaking = false; 
     const isSTTSupported = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
-    
-    // Check if the current environment supports SpeechRecognition
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-
-    const recognition = isSTTSupported ? new SpeechRecognition() : null;
+    const recognition = isSTTSupported ? new (window.webkitSpeechRecognition || window.SpeechRecognition)() : null;
     
     let currentAudio = null;
 
     /** Fetches the AI (text) response. */
     async function fetchGeminiResponse(chatHistory, retries = 3) {
+        const cleanedHistory = chatHistory
+            .filter(msg => msg.parts?.[0]?.text?.trim() && ['user', 'model'].includes(msg.role))
+            .map(msg => ({ 
+                role: msg.role, 
+                parts: [{ text: msg.parts[0].text }] 
+            }));
+            
         const payload = {
-            contents: chatHistory,
+            contents: cleanedHistory,
             systemInstruction: { parts: [{ text: systemPrompt }] },
         };
 
@@ -444,10 +454,17 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
+                
+                if (response.status === 400) {
+                     const errorData = await response.json().catch(() => ({}));
+                     throw new Error(`Gemini 400 Error: Invalid request payload. (API Message: ${errorData.error?.message || 'Unknown'})`);
+                }
+                
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 const result = await response.json();
                 const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
                 if (text) return { text };
+                
                 throw new Error("Invalid response format from Gemini API.");
             } catch (error) {
                 if (i < retries - 1) await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000));
@@ -456,44 +473,80 @@
         }
     }
 
-    /** Fetches the TTS audio data for a given text. */
-    async function fetchTtsAudio(text) {
+    /** Fetches the TTS audio data for a given text with Exponential Backoff for 429. */
+    async function fetchTtsAudio(text, retries = 5) { 
+        if (!text || text.trim().length < 2) {
+            console.warn("TTS skipped: Text is too short or empty.");
+            return null; 
+        }
+        const sanitizedText = text
+            .replace(/\*\*|__|_/g, '') 
+            .replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1') 
+            .replace(/#/g, '') 
+            .replace(/\*/g, '') 
+            .replace(/`/g, '') 
+            .replace(/\n\s*\n/g, ' '); 
+
         const payload = {
-            contents: [{ parts: [{ text: text }] }],
+            contents: [{ parts: [{ text: sanitizedText }] }],
             generationConfig: {
                 responseModalities: ["AUDIO"],
                 speechConfig: {
                     voiceConfig: {
-                        prebuiltVoiceConfig: { voiceName: "Kore" } // Using Kore voice
+                        prebuiltVoiceConfig: { voiceName: "Kore" }
                     }
                 }
             },
         };
 
-        const response = await fetch(TTS_API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
+        for (let i = 0; i < retries; i++) {
+            try {
+                const response = await fetch(TTS_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
 
-        if (!response.ok) throw new Error(`TTS HTTP error! status: ${response.status}`);
-        const result = await response.json();
-        const part = result?.candidates?.[0]?.content?.parts?.[0];
-        
-        if (!part || !part.inlineData || !part.inlineData.data) {
-            throw new Error("Invalid TTS response format.");
+                if (response.ok) {
+                    const result = await response.json();
+                    const part = result?.candidates?.[0]?.content?.parts?.[0];
+                    
+                    if (!part || !part.inlineData || !part.inlineData.data) {
+                        throw new Error("Invalid TTS response format.");
+                    }
+
+                    const audioData = part.inlineData.data;
+                    const mimeType = part.inlineData.mimeType; 
+                    const sampleRateMatch = mimeType.match(/rate=(\d+)/);
+                    const sampleRate = sampleRateMatch ? parseInt(sampleRateMatch[1], 10) : 24000;
+
+                    const pcmData = base64ToArrayBuffer(audioData);
+                    const pcm16 = new Int16Array(pcmData);
+                    const wavBlob = pcmToWav(pcm16, sampleRate);
+                    
+                    return URL.createObjectURL(wavBlob);
+                } 
+                
+                if (response.status === 400) {
+                    throw new Error(`TTS HTTP error! status: 400 (Bad Text Content/Payload)`);
+                } else if (response.status === 429 && i < retries - 1) {
+                    const initialDelay = 500; 
+                    const backoffTime = initialDelay * Math.pow(2, i);
+                    const jitter = Math.random() * 500; 
+                    const delay = backoffTime + jitter; 
+                    
+                    console.warn(`TTS Rate limit (429) hit. Retrying in ${Math.round(delay / 1000)}s (Attempt ${i + 1} of ${retries})...`);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                } else {
+                    throw new Error(`TTS HTTP error! status: ${response.status}`);
+                }
+            } catch (error) {
+                if (i === retries - 1 || error.message.includes("400")) {
+                    throw error; 
+                }
+            }
         }
-
-        const audioData = part.inlineData.data;
-        const mimeType = part.inlineData.mimeType; // e.g., audio/L16;rate=24000
-        const sampleRateMatch = mimeType.match(/rate=(\d+)/);
-        const sampleRate = sampleRateMatch ? parseInt(sampleRateMatch[1], 10) : 24000;
-
-        const pcmData = base64ToArrayBuffer(audioData);
-        const pcm16 = new Int16Array(pcmData);
-        const wavBlob = pcmToWav(pcm16, sampleRate);
-        
-        return URL.createObjectURL(wavBlob);
+        throw new Error("TTS request failed after maximum retries.");
     }
     
     /** Plays audio from a URL, stopping any currently playing audio. */
@@ -518,7 +571,7 @@
         }
         
         currentAudio.play().catch(e => {
-            console.warn("Autoplay was prevented (requires user interaction first):", e);
+            console.warn("Autoplay was prevented:", e);
             isBotSpeaking = false;
             if (onFinish) onFinish();
         });
@@ -526,7 +579,7 @@
 
     // Speech-to-Text Setup
     if (isSTTSupported) {
-        recognition.continuous = false; // We manage continuity manually
+        recognition.continuous = false;
         recognition.lang = 'en-US';
         recognition.interimResults = false;
         recognition.maxAlternatives = 1;
@@ -534,71 +587,36 @@
         recognition.onstart = () => {
             isRecording = true;
             micButton.classList.add('recording');
-            userInput.placeholder = "Listening... Say 'Hey Mysa' to start.";
-            // Temporarily disable manual text input during recording
+            userInput.placeholder = "Listening... Speak now.";
             userInput.disabled = true;
             sendButton.disabled = true;
-            micButton.disabled = false; // Keep mic button enabled to stop recording
         };
 
         recognition.onresult = (event) => {
-            const transcript = event.results[0][0].transcript.toLowerCase();
-            console.log("Transcript detected:", transcript);
-            
-            if (transcript.startsWith(WAKE_WORD)) {
-                // If wake word is detected, process the rest of the command
-                let command = transcript.substring(WAKE_WORD.length).trim();
-                if (command.length === 0) {
-                    // If only 'Hey Mysa' was said, prompt the user for the full command
-                    command = "Hello. What's on your mind?";
-                }
-                
-                userInput.value = command; // Display the command in the input field
-                sendMessage(command, true); // Send the message
-                
-            } else if (isRecording) {
-                 // If not the wake word, restart listening (or stop, depending on continuous setting)
-                 // Since continuous=false, we stop and let onend restart it for continuous wake word
-                 recognition.stop();
-            }
+            const transcript = event.results[0][0].transcript;
+            userInput.value = transcript;
+            sendMessage(transcript, true); 
         };
 
         recognition.onend = () => {
             isRecording = false;
             micButton.classList.remove('recording');
-
-            // If the chatbot is not currently speaking, restart continuous listening
-            // This is the core of the wake word loop
-            if (!isBotSpeaking && isAuthReady) {
-                 setTimeout(() => {
-                     if (!isRecording) { // Prevent multiple starts if user clicked button
-                        startContinuousListening(); 
-                     }
-                 }, 500);
-            } else {
-                 // If the bot is speaking, the finishTurn function will restart listening after audio ends
-                 finishTurn();
-            }
         };
 
         recognition.onerror = (event) => {
             console.error('Speech Recognition Error:', event.error);
-            // Ignore no-speech errors, which are common in continuous loops
-            if (event.error !== 'no-speech') {
-                const errorMsg = `Voice input error: ${event.error}. Restarting listener...`;
-                const alertDiv = document.createElement('div');
-                alertDiv.className = 'crisis-alert fixed bottom-5 right-5 z-50';
-                alertDiv.innerHTML = `<p class="font-bold">Microphone Error</p><p class="text-sm mt-1">${errorMsg}</p>`;
-                document.body.appendChild(alertDiv);
-                setTimeout(() => document.body.removeChild(alertDiv), 5000);
-            }
+            const errorMsg = `Voice input error: ${event.error}. Please check your microphone permissions.`;
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'crisis-alert fixed bottom-5 right-5 z-50';
+            alertDiv.innerHTML = `<p class="font-bold">Microphone Error</p><p class="text-sm mt-1">${errorMsg}</p>`;
+            document.body.appendChild(alertDiv);
+            setTimeout(() => document.body.removeChild(alertDiv), 5000);
             
-            // Attempt to restart listening immediately after an error
-            isRecording = false; 
-            if (isAuthReady && !isBotSpeaking) {
-                 setTimeout(startContinuousListening, 100);
-            } else {
-                 finishTurn();
+            if (isAuthReady) {
+                userInput.placeholder = "Share how you are feeling...";
+                userInput.disabled = false;
+                sendButton.disabled = false;
+                micButton.disabled = !isSTTSupported;
             }
         };
     } else {
@@ -607,22 +625,6 @@
         console.warn("Speech Recognition not supported in this browser.");
     }
     
-    function startContinuousListening() {
-         if (isRecording || !isAuthReady || !isSTTSupported || isBotSpeaking) return;
-         
-         try {
-             recognition.start();
-             console.log("Listening for wake word...");
-         } catch (e) {
-             // Catch error if recognition is already running (e.g., race condition)
-             if (e.name !== 'InvalidStateError') {
-                 console.error("Recognition start failed:", e);
-                 // Fallback to manual input
-                 finishTurn(); 
-             }
-         }
-    }
-
     function toggleRecording() {
         if (!isAuthReady) return; 
 
@@ -634,33 +636,19 @@
 
         if (isRecording) {
             recognition.stop();
-            // recognition.onend will handle the cleanup and potential restart
         } else {
-            // Start listening manually (this bypasses the wake word check for a direct input)
             try {
-                // Set to continuous=true temporarily for manual button press, allowing long input
-                recognition.continuous = true; 
                 recognition.start();
             } catch (e) {
                 console.error("Recognition start failed:", e);
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'crisis-alert fixed bottom-5 right-5 z-50';
+                alertDiv.innerHTML = `<p class="font-bold">Microphone Start Failed</p><p class="text-sm mt-1">Please ensure your browser has microphone permission enabled for this page.</p>`;
+                document.body.appendChild(alertDiv);
+                setTimeout(() => document.body.removeChild(alertDiv), 5000);
             }
         }
     }
-    
-    /** Re-enables controls and ensures continuous listening restarts if needed. */
-    const finishTurn = () => {
-        userInput.placeholder = "Share how you are feeling...";
-        userInput.disabled = false;
-        sendButton.disabled = false;
-        micButton.disabled = !isSTTSupported;
-        userInput.focus();
-        
-        // Ensure continuous listening is restarted only if not currently speaking
-        if (!isBotSpeaking && isAuthReady) {
-             startContinuousListening(); 
-        }
-    };
-
 
     // ========================================================================
     // --- 3. MAIN APPLICATION LOGIC (UI & Chat Flow) ---
@@ -668,7 +656,55 @@
     
     let currentChatHistory = [];
 
-    /** Renders the chat messages to the UI. */
+    /** Renders a single message element (used for both history and live append). */
+    function createMessageElement(msg) {
+        const isUser = msg.role === 'user';
+        const messageDiv = document.createElement('div');
+        
+        if (msg.isCrisis) {
+             messageDiv.className = 'crisis-alert';
+             messageDiv.innerHTML = `
+                <p class="mb-2 font-bold text-lg">⚠️ URGENT CRISIS ALERT ⚠️</p>
+                <p class="text-base">${msg.text}</p>
+                <p class="mt-3 text-sm">Please reach out immediately:</p>
+                <ul class="list-disc list-inside ml-2 text-sm">
+                    <li>**India Suicide Prevention:** 9152987821</li>
+                    <li>**US National Suicide & Crisis:** 988</li>
+                </ul>
+            `;
+        } else {
+            messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
+            messageDiv.textContent = msg.text;
+
+            if (!isUser && msg.audioUrl) {
+                const playButton = document.createElement('button');
+                playButton.className = 'play-button';
+                playButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zm2.46-7.12l1.41-1.41 2.55 2.55 2.55-2.55 1.41 1.41-3.96 3.96zM15.5 4l-1-1h-5l-1 1H5v2h14V4z"/></svg>`;
+                playButton.title = "Play Audio";
+                
+                playButton.onclick = () => {
+                    playButton.disabled = true; 
+                    playAudioFromUrl(msg.audioUrl, () => {
+                        playButton.disabled = false;
+                        playButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zm2.46-7.12l1.41-1.41 2.55 2.55 2.55-2.55 1.41 1.41-3.96 3.96zM15.5 4l-1-1h-5l-1 1H5v2h14V4z"/></svg>`;
+                    });
+                    playButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="12" cy="12" r="10"/><path fill="white" d="M10 9h1a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1zm3 0h1a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1z"/></svg>`; 
+                };
+                messageDiv.appendChild(playButton);
+            }
+        }
+        return messageDiv;
+    }
+
+    /** Appends a message immediately to the UI (Optimistic Rendering) */
+    function appendNewMessage(msg) {
+        const messageDiv = createMessageElement(msg);
+        chatWindow.appendChild(messageDiv);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+        return messageDiv;
+    }
+
+    /** Renders the full history (only used on initial load) */
     function renderChatHistory(messages) {
         currentChatHistory = messages.map(msg => ({ 
             role: msg.role === 'bot' ? 'model' : 'user', 
@@ -685,48 +721,9 @@
 
         messages.forEach(msg => {
             if (msg.text) {
-                const isUser = msg.role === 'user';
-                const messageDiv = document.createElement('div');
-                
-                if (msg.isCrisis) {
-                    messageDiv.className = 'crisis-alert';
-                    messageDiv.innerHTML = `
-                        <p class="mb-2 font-bold text-lg">⚠️ URGENT CRISIS ALERT ⚠️</p>
-                        <p class="text-base">${msg.text}</p>
-                        <p class="mt-3 text-sm">Please reach out immediately:</p>
-                        <ul class="list-disc list-inside ml-2 text-sm">
-                            <li>**India Suicide Prevention:** 9152987821</li>
-                            <li>**US National Suicide & Crisis:** 988</li>
-                        </ul>
-                    `;
-                } else {
-                    messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
-                    messageDiv.textContent = msg.text;
-
-                    // Manual Playback Button for history (not for V2V immediate play)
-                    if (!isUser && msg.audioUrl) {
-                        const playButton = document.createElement('button');
-                        playButton.className = 'play-button';
-                        playButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zm2.46-7.12l1.41-1.41 2.55 2.55 2.55-2.55 1.41 1.41-3.96 3.96zM15.5 4l-1-1h-5l-1 1H5v2h14V4z"/></svg>`;
-                        playButton.title = "Play Audio";
-                        
-                        // Audio playback logic (Manual Trigger)
-                        playButton.onclick = () => {
-                            playButton.disabled = true; // Disable while playing
-                            playAudioFromUrl(msg.audioUrl, () => {
-                                playButton.disabled = false;
-                                playButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zm2.46-7.12l1.41-1.41 2.55 2.55 2.55-2.55 1.41 1.41-3.96 3.96zM15.5 4l-1-1h-5l-1 1H5v2h14V4z"/></svg>`;
-                            });
-                            playButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="12" cy="12" r="10"/><path fill="white" d="M10 9h1a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1zm3 0h1a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1z"/></svg>`; 
-                        };
-                        messageDiv.appendChild(playButton);
-                    }
-                }
-                chatWindow.appendChild(messageDiv);
+                appendNewMessage(msg);
             }
         });
-
-        chatWindow.scrollTop = chatWindow.scrollHeight;
     }
 
 
@@ -736,43 +733,49 @@
         if (isVoiceInput) userInput.value = text;
         
         userInput.value = ''; 
-
-        // 1. Check for Crisis Keywords
-        const isCrisis = CRISIS_KEYWORDS.some(keyword => text.toLowerCase().includes(keyword));
-
-        // 2. Save user message to DB
-        await addDoc(collection(dbInstance, "artifacts", appId, "users", userIdInstance, "chats"), {
-            text: text,
-            role: 'user',
-            isCrisis: false,
-            timestamp: serverTimestamp(),
-        });
         
-        // Disable input while API is busy (user cannot type or talk during bot's turn)
+        // Disable input while API is busy
         userInput.disabled = true;
         sendButton.disabled = true;
         micButton.disabled = true;
         userInput.placeholder = "Awaiting response...";
-        
-        // Stop continuous listening right before starting the AI response sequence
-        if (isRecording) {
-            recognition.stop(); 
-        }
 
-        // 3. Handle Crisis Detection
+        // Function to re-enable controls
+        const finishTurn = () => {
+            userInput.placeholder = "Share how you are feeling...";
+            userInput.disabled = false;
+            sendButton.disabled = false;
+            micButton.disabled = !isSTTSupported;
+            userInput.focus();
+        };
+
+        // 1. Optimistically Render User Message
+        const userMsg = { text: text, role: 'user', isCrisis: false };
+        appendNewMessage(userMsg);
+        
+        // 2. Save User Message (non-blocking)
+        const dbPromise = addDoc(collection(dbInstance, "artifacts", appId, "users", userIdInstance, "chats"), {
+            ...userMsg,
+            timestamp: serverTimestamp(),
+        });
+        
+        // 3. Check for Crisis Keywords
+        const isCrisis = CRISIS_KEYWORDS.some(keyword => text.toLowerCase().includes(keyword));
+
+        // 4. Handle Crisis Detection
         if (isCrisis) {
             const crisisText = `It sounds like you are going through immense pain right now, and I want you to know that help is available. Please reach out to the resources below immediately. You do not have to go through this alone.`;
+            const crisisMsg = { text: crisisText, role: 'bot', isCrisis: true };
+            appendNewMessage(crisisMsg);
             await addDoc(collection(dbInstance, "artifacts", appId, "users", userIdInstance, "chats"), {
-                text: crisisText,
-                role: 'bot',
-                isCrisis: true,
+                ...crisisMsg,
                 timestamp: serverTimestamp(),
             });
-            finishTurn(); // Re-enable immediately on crisis
+            finishTurn(); 
             return;
         }
 
-        // 4. Show typing indicator
+        // 5. Show typing indicator
         const typingIndicator = document.createElement('div');
         typingIndicator.className = 'typing-indicator';
         typingIndicator.textContent = 'Mysa is typing...';
@@ -780,28 +783,37 @@
         chatWindow.scrollTop = chatWindow.scrollHeight;
 
         try {
-            // 5. Fetch AI text response using the current, synchronized history
-            const textResponse = await fetchGeminiResponse(currentChatHistory);
+            // 6. Prepare chat history for Gemini call
+            const chatHistoryForAPI = [...currentChatHistory, {role: 'user', parts: [{text: text}]}];
             
-            // 6. Fetch TTS audio
+            // 7. Fetch AI text response
+            const textResponse = await fetchGeminiResponse(chatHistoryForAPI);
+            
+            // 8. Fetch TTS audio
             const audioUrl = await fetchTtsAudio(textResponse.text);
 
-            // 7. Remove typing indicator
+            // 9. Remove typing indicator
             if (chatWindow.contains(typingIndicator)) {
                 chatWindow.removeChild(typingIndicator);
             }
-
-            // 8. Save bot response to DB with audio URL (Triggers onSnapshot/renderChatHistory)
+            
+            // 10. Optimistically Render Bot Message
+            const botMsg = { text: textResponse.text, role: 'bot', isCrisis: false, audioUrl: audioUrl };
+            appendNewMessage(botMsg);
+            
+            // 11. Save Bot Message to DB (non-blocking)
             await addDoc(collection(dbInstance, "artifacts", appId, "users", userIdInstance, "chats"), {
-                text: textResponse.text,
-                audioUrl: audioUrl,
-                role: 'bot',
-                isCrisis: false,
+                ...botMsg,
                 timestamp: serverTimestamp(),
             });
 
-            // 9. IMMEDIATE PLAYBACK: Play audio and then re-enable controls
-            playAudioFromUrl(audioUrl, finishTurn);
+            // 12. Re-enable input controls immediately
+            finishTurn(); 
+
+            // 13. Start Playback
+            if (audioUrl) {
+                playAudioFromUrl(audioUrl); 
+            }
             
         } catch (error) {
             console.error("Chat/TTS Error:", error);
@@ -809,13 +821,14 @@
                 chatWindow.removeChild(typingIndicator);
             }
             const errorMsg = `Sorry, a voice or API error occurred. Please check console for details on: ${error.message}`;
+            const errorBotMsg = { text: errorMsg, role: 'bot', isCrisis: false };
+            appendNewMessage(errorBotMsg);
+            
             await addDoc(collection(dbInstance, "artifacts", appId, "users", userIdInstance, "chats"), {
-                text: errorMsg,
-                role: 'bot',
-                isCrisis: false,
+                ...errorBotMsg,
                 timestamp: serverTimestamp(),
             });
-            finishTurn(); // Re-enable controls immediately on error
+            finishTurn(); 
         }
     }
 
@@ -824,7 +837,6 @@
         if (authInstance) {
             try {
                 await signOut(authInstance);
-                // Clear UI and restart initialization
                 chatWindow.innerHTML = '';
                 updateStatus("Logged out. Restarting session...");
                 initializeFirebase();

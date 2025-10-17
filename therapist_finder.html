@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compass: Find a Therapist</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* --- CORE STYLES & VARIABLES --- */
+        :root {
+            --color-primary: #5b3ce9; /* Deep Indigo */
+            --color-secondary: #764ba2; /* Dark Lavender */
+            --color-accent: #10b981; /* Mint Green */
+            --color-bg: #f8f9fc; /* Light BG */
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--color-bg);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+            padding: 20px 0;
+            border-radius: 15px;
+            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        header h1 {
+            font-size: 2.8em;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin-bottom: 5px;
+        }
+
+        /* --- SEARCH SECTION --- */
+        .search-section {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .search-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 0.95em;
+        }
+
+        input, select {
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(91, 60, 233, 0.2);
+        }
+
+        .search-btn {
+            background: var(--color-accent);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.2s;
+            box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
+        }
+
+        .search-btn:hover {
+            background-color: #0d9472;
+            transform: translateY(-1px);
+        }
+
+        /* --- RESULTS LAYOUT --- */
+        .results-section {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+        }
+
+        .therapist-list {
+            display: grid;
+            gap: 20px;
+        }
+
+        .therapist-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            border: 2px solid transparent;
+            transition: border-color 0.3s, box-shadow 0.3s, transform 0.3s;
+            position: relative;
+        }
+        
+        /* Creative touch: Pulse effect on hover */
+        .therapist-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(91, 60, 233, 0.15);
+        }
+
+        .therapist-card.selected {
+            border-color: var(--color-primary);
+            box-shadow: 0 0 15px rgba(91, 60, 233, 0.5);
+        }
+
+        .therapist-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .therapist-name {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: var(--color-primary);
+        }
+
+        .distance-badge {
+            background: var(--color-secondary);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .specialization-tag {
+            background: var(--color-primary);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: 600;
+            margin-right: 8px;
+            display: inline-block;
+        }
+
+        .info-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            color: #666;
+            font-size: 0.95em;
+        }
+
+        .info-icon {
+            margin-right: 10px;
+            color: var(--color-secondary);
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        /* --- APPOINTMENT SECTION --- */
+        .appointment-section {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+            border: 1px solid var(--color-primary);
+            position: sticky;
+            top: 20px;
+            height: fit-content;
+        }
+
+        .appointment-title {
+            font-size: 1.5em;
+            font-weight: 800;
+            color: var(--color-primary);
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        .appointment-option {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .appointment-option:hover {
+            border-color: var(--color-secondary);
+            background: #f4f2ff;
+        }
+
+        .appointment-type { margin-bottom: 15px; }
+        .appointment-option label { margin: 0; flex: 1; cursor: pointer; font-weight: 600; }
+        .appointment-option input[type="radio"] { accent-color: var(--color-primary); margin-right: 12px; transform: scale(1.2); }
+        
+        .slots { margin-top: 20px; border-top: 1px dashed #e0e0e0; padding-top: 20px; }
+
+        .slot-btn {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 8px;
+            border: 2px solid #e0e0e0;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+            font-weight: 500;
+        }
+
+        .slot-btn.selected {
+            border-color: var(--color-accent); 
+            background: #e6fff4; /* Light mint */
+            font-weight: 700;
+            color: var(--color-accent);
+        }
+
+        .slot-btn:hover:not(.selected) {
+            border-color: var(--color-primary);
+            background: #f8f9ff;
+        }
+
+        .book-btn {
+            width: 100%;
+            background: var(--color-accent);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: transform 0.2s, background-color 0.2s;
+        }
+
+        .book-btn:hover {
+            background-color: #0d9472;
+            transform: translateY(-2px);
+        }
+
+        /* --- MEDIA QUERIES --- */
+        @media (max-width: 768px) {
+            .search-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .results-section {
+                grid-template-columns: 1fr;
+            }
+
+            .appointment-section {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>My<span style="color: #adf; font-weight: 900;">sa</span> Compass</h1>
+            <p>Find trusted mental health professionals near you</p>
+        </header>
+
+        <div class="search-section">
+            <div class="search-grid">
+                <div class="form-group">
+                    <label for="city">City</label>
+                    <select id="city" onchange="updateDistrictOptions()">
+                        <option value="Belgaum">Belgaum</option>
+                        <option value="Hubli">Hubli</option>
+                        <option value="Bangalore">Bangalore</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="district">District</label>
+                    <select id="district">
+                        </select>
+                </div>
+                <div class="form-group">
+                    <label for="radius">Max Radius (km)</label>
+                    <input type="number" id="radius" min="1" max="50" value="15" placeholder="Search radius in km">
+                </div>
+            </div>
+            <button class="search-btn" onclick="searchTherapists()">🔍 Search Therapists</button>
+        </div>
+
+        <div class="results-section">
+            <div class="therapist-list" id="therapistList">
+                </div>
+
+            <div class="appointment-section">
+                <div class="appointment-title">💼 Book Appointment</div>
+
+                <div class="appointment-type">
+                    <div class="appointment-option">
+                        <input type="radio" id="inPerson" name="appointmentType" value="in-person" checked>
+                        <label for="inPerson">🏢 In-Person</label>
+                    </div>
+                </div>
+
+                <div class="appointment-type">
+                    <div class="appointment-option">
+                        <input type="radio" id="online" name="appointmentType" value="online">
+                        <label for="online">💻 Online (Video Call)</label>
+                    </div>
+                </div>
+
+                <div class="appointment-type">
+                    <div class="appointment-option">
+                        <input type="radio" id="phone" name="appointmentType" value="phone">
+                        <label for="phone">☎️ Phone Consultation</label>
+                    </div>
+                </div>
+
+                <div class="slots" id="slotSection">
+                    <div class="slot-title">Available Slots for: <span id="selectedTherapistName">Select a Therapist</span></div>
+                    <p id="slot-instruction" style="color:#999; font-style:italic;">Please select a therapist from the list to see their specific slots.</p>
+                    
+                    <button class="slot-btn hidden" data-slot="Monday, 10:00 AM">📅 Monday, 10:00 AM</button>
+                    <button class="slot-btn hidden" data-slot="Tuesday, 2:00 PM">📅 Tuesday, 2:00 PM</button>
+                    <button class="slot-btn hidden" data-slot="Wednesday, 4:00 PM">📅 Wednesday, 4:00 PM</button>
+                </div>
+
+                <button class="book-btn" onclick="bookAppointment()" disabled id="confirmBookBtn">✅ Select a Therapist</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- DATA SOURCE (Expanded for dynamic search) ---
+        const ALL_THERAPISTS = [
+            { id: 1, name: "Dr. Priya Sharma", specialization: "Anxiety & Depression", city: "Belgaum", location: "City Center", distance: 2.5, district: "Belagavi", phone: "+91-9876543210", rating: 4.8 },
+            { id: 2, name: "Dr. Rajesh Kumar", specialization: "Cognitive Behavioral Therapy", city: "Belgaum", location: "Hospital Area", distance: 5.2, district: "Belagavi", phone: "+91-9876543211", rating: 4.6 },
+            { id: 3, name: "Dr. Meera Patel", specialization: "Family Counseling", city: "Belgaum", location: "Medical Plaza", distance: 7.8, district: "Belagavi", phone: "+91-9876543212", rating: 4.9 },
+            { id: 4, name: "Dr. Vijay Singh", specialization: "Stress Management", city: "Hubli", location: "Vidyanagar", distance: 10.3, district: "Dharwad", phone: "+91-9876543213", rating: 4.7 },
+            { id: 5, name: "Dr. Sarah Johnson", specialization: "Trauma Therapy", city: "Hubli", location: "Gokul Road", distance: 12.1, district: "Dharwad", phone: "+91-9876543214", rating: 4.5 },
+            { id: 6, name: "Dr. Riya Sen", specialization: "Child Psychology", city: "Bangalore", location: "Koramangala", distance: 4.0, district: "Bangalore Urban", phone: "+91-9876543215", rating: 5.0 },
+            { id: 7, name: "Ms. Leena Gowda", specialization: "Couple Therapy", city: "Bangalore", location: "Jayanagar", distance: 15.0, district: "Bangalore Urban", phone: "+91-9876543216", rating: 4.3 }
+        ];
+        
+        let selectedTherapist = null;
+        let selectedSlot = null;
+
+        // --- DYNAMIC LOCATION LOGIC ---
+        
+        /** Maps cities to districts and returns unique districts */
+        const LOCATION_DATA = {};
+        ALL_THERAPISTS.forEach(t => {
+            if (!LOCATION_DATA[t.city]) {
+                LOCATION_DATA[t.city] = new Set();
+            }
+            LOCATION_DATA[t.city].add(t.district);
+        });
+        
+        /** Populates the District dropdown based on the selected City. */
+        function updateDistrictOptions() {
+            const citySelect = document.getElementById('city');
+            const districtSelect = document.getElementById('district');
+            const selectedCity = citySelect.value;
+
+            // Clear previous options
+            districtSelect.innerHTML = ''; 
+
+            const districts = LOCATION_DATA[selectedCity] || new Set();
+            
+            // Add 'All' option
+            const allOption = document.createElement('option');
+            allOption.value = 'all';
+            allOption.textContent = `All Districts in ${selectedCity}`;
+            districtSelect.appendChild(allOption);
+
+            // Add specific district options
+            districts.forEach(district => {
+                const option = document.createElement('option');
+                option.value = district;
+                option.textContent = district;
+                districtSelect.appendChild(option);
+            });
+            
+            // Re-run search after update
+            searchTherapists(); 
+        }
+        
+        // --- SEARCH LOGIC ---
+
+        function searchTherapists() {
+            const city = document.getElementById('city').value.toLowerCase();
+            const district = document.getElementById('district').value.toLowerCase();
+            const radius = parseInt(document.getElementById('radius').value);
+
+            const filtered = ALL_THERAPISTS.filter(t => {
+                const cityMatch = t.city.toLowerCase() === city;
+                
+                // District Match: Check if 'all' is selected or if district matches
+                const districtMatch = district === 'all' || t.district.toLowerCase() === district;
+                
+                // Radius Match: Checks how much km away they are
+                const radiusMatch = t.distance <= radius;
+
+                return cityMatch && districtMatch && radiusMatch;
+            }).sort((a, b) => a.distance - b.distance); // Sort by distance
+
+            renderTherapistList(filtered);
+        }
+
+        // --- RENDER LOGIC ---
+
+        function renderTherapistList(filtered) {
+            const listDiv = document.getElementById('therapistList');
+            
+            if (filtered.length === 0) {
+                listDiv.innerHTML = '<p class="no-results">😔 No therapists found matching your criteria. Try adjusting the city, district, or radius.</p>';
+                resetBookingSection();
+                return;
+            }
+
+            listDiv.innerHTML = filtered.map(t => `
+                <div class="therapist-card" data-therapist-id="${t.id}">
+                    <div class="therapist-header">
+                        <div class="therapist-name">${t.name}</div>
+                        <div class="distance-badge">📍 ${t.distance} km</div>
+                    </div>
+                    <div class="therapist-info">
+                        <div class="info-row">
+                            <span class="info-icon">✨</span>
+                            <span class="specialization-tag">${t.specialization}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-icon">🏡</span>
+                            <span>${t.location}, ${t.district}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-icon">⭐</span>
+                            <span>${t.rating} / 5.0 Rating</span>
+                        </div>
+                    </div>
+                    <button class="search-btn" style="width:100%; background: var(--color-accent);" onclick="selectTherapist(${t.id}, event)">Select for Booking</button>
+                </div>
+            `).join('');
+        }
+        
+        // --- APPOINTMENT LOGIC ---
+        
+        function resetBookingSection() {
+            selectedTherapist = null;
+            selectedSlot = null;
+            document.getElementById('selectedTherapistName').textContent = 'Select a Therapist';
+            document.getElementById('confirmBookBtn').textContent = '✅ Select a Therapist';
+            document.getElementById('confirmBookBtn').disabled = true;
+            document.getElementById('slot-instruction').classList.remove('hidden');
+            document.querySelectorAll('.slots .slot-btn').forEach(btn => btn.classList.add('hidden', 'selected'));
+            document.querySelectorAll('.therapist-card').forEach(c => c.classList.remove('selected'));
+        }
+
+        function selectTherapist(id, event) {
+            selectedTherapist = ALL_THERAPISTS.find(t => t.id === id);
+            
+            // Highlight the selected card
+            document.querySelectorAll('.therapist-card').forEach(c => c.classList.remove('selected'));
+            event.currentTarget.closest('.therapist-card').classList.add('selected');
+
+            document.getElementById('selectedTherapistName').textContent = selectedTherapist.name;
+            document.getElementById('confirmBookBtn').disabled = true;
+            document.getElementById('confirmBookBtn').textContent = '✅ Select a Slot';
+            selectedSlot = null;
+            
+            // Show dummy slots
+            document.getElementById('slot-instruction').classList.add('hidden');
+            document.querySelectorAll('.slots .slot-btn').forEach(btn => {
+                btn.classList.remove('hidden', 'selected');
+            });
+        }
+
+        function bookAppointment() {
+            if (!selectedTherapist) {
+                alert("Please select a therapist first!");
+                return;
+            }
+            
+            const appointmentType = document.querySelector('input[name="appointmentType"]:checked').value;
+            const selectedSlotBtn = document.querySelector('.slot-btn.selected');
+            
+            if (!selectedSlotBtn) {
+                 alert("Please select an available time slot!");
+                 return;
+            }
+
+            const slot = selectedSlotBtn.getAttribute('data-slot');
+            
+            const typeLabel = {
+                'in-person': 'In-Person',
+                'online': 'Online (Video)',
+                'phone': 'Phone Consultation'
+            };
+
+            alert(`✅ Appointment Booked!\n\n` + 
+                  `Therapist: ${selectedTherapist.name}\n` + 
+                  `Service: ${typeLabel[appointmentType]}\n` + 
+                  `Time: ${slot}\n\n` +
+                  `You will receive a confirmation email shortly. Thank you!`);
+            
+            resetBookingSection();
+            searchTherapists(); // Refresh list
+        }
+        
+        // Slot selection handler
+        document.getElementById('slotSection').addEventListener('click', (e) => {
+            if (e.target.classList.contains('slot-btn')) {
+                // Remove selected class from all
+                document.querySelectorAll('.slot-btn').forEach(btn => btn.classList.remove('selected'));
+                // Add selected class to the clicked button
+                e.target.classList.add('selected');
+                selectedSlot = e.target.getAttribute('data-slot');
+                document.getElementById('confirmBookBtn').textContent = `✅ Book ${selectedSlot.split(',')[1].trim()}`;
+                document.getElementById('confirmBookBtn').disabled = false;
+            }
+        });
+
+        // --- INITIAL PAGE LOAD ---
+        window.addEventListener('load', () => {
+            updateDistrictOptions(); // Populate districts based on default city
+            searchTherapists();      // Run initial search
+        });
+    </script>
+</body>
+</html>

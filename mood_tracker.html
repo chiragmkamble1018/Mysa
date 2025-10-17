@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mood Tracker & Stress Buster Games</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/face_mesh.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3.1620248257/drawing_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1640029074/camera_utils.js"></script>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f0f4f8; }
+        .main-container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        #video-feed { transform: scaleX(-1); /* Mirror the video */ }
+        .tracker-box { position: relative; width: 100%; max-width: 500px; margin: 0 auto; }
+        canvas { position: absolute; top: 0; left: 0; transform: scaleX(-1); }
+
+        /* Custom Styles for Mood Display */
+        .mood-indicator {
+            transition: all 0.5s ease-in-out;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        .mood-happy { color: #10b981; }
+        .mood-sad { color: #f59e0b; }
+        .mood-neutral { color: #6b7280; }
+        .mood-surprise { color: #3b82f6; }
+        .mood-drowsy { color: #9c27b0; }
+        .mood-alert { color: #ef4444; }
+        
+        .report-output {
+            margin-top: 15px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #fff;
+            white-space: pre-wrap;
+            font-size: 0.9rem;
+        }
+        .report-output.success { border-color: #10b981; background-color: #e6fff4; color: #0d9488; }
+        .report-output.failure { border-color: #ef4444; background-color: #fee2e2; color: #b91c1c; }
+
+    </style>
+</head>
+<body>
+
+    <nav class="bg-indigo-700 text-white shadow-lg">
+        <div class="main-container flex justify-between items-center py-3">
+            <h1 class="text-2xl font-bold">Mysa: Mood Tracker</h1>
+            <div class="space-x-4">
+                <a href="chatbot.html" class="hover:text-indigo-200">Chatbot</a>
+                <a href="index.html" class="hover:text-indigo-200">Home</a>
+                <a href="doctor.html" class="hover:text-indigo-200">Find Therapist</a>
+                <a href="mood_tracker.html" class="text-indigo-200 font-semibold border-b-2 border-indigo-200">Mood Tracker</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="main-container mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-xl">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4 border-b pb-2">Live Expression Detection</h2>
+            
+            <div class="tracker-box bg-gray-900 rounded-lg overflow-hidden">
+                <video id="video-feed" class="w-full" autoplay playsinline></video>
+                <canvas id="output-canvas" class="w-full h-full"></canvas>
+            </div>
+
+            <div class="mt-4 text-center">
+                <p class="text-gray-600 mb-2">Current Detected Mood:</p>
+                <div id="mood-display" class="mood-indicator mood-neutral">Not Running</div>
+                <button id="start-stop-btn" onclick="toggleDetection()" class="mt-4 px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
+                    Start Detection
+                </button>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl shadow-xl space-y-6">
+            <h2 class="text-2xl font-bold text-gray-800 border-b pb-2 mb-4">Mood Report & Games</h2>
+            
+            <div>
+                <h3 class="text-xl font-semibold text-gray-700 mb-2">My Mood Summary</h3>
+                <p id="report-status" class="text-sm text-gray-500 mb-3">Detection Status: Stopped. Click below to analyze saved data.</p>
+                <button onclick="analyzeData()" id="analyze-btn" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                    Generate & Download Report (PDF)
+                </button>
+                <div id="analysis-output" class="report-output hidden"></div>
+            </div>
+
+            <div class="p-4 bg-yellow-50 border-l-4 border-yellow-500 rounded-lg" id="game-recommendation">
+                <h3 class="text-xl font-semibold text-yellow-800 mb-2">⭐ Stress Buster Recommended</h3>
+                <p id="recommendation-text" class="text-gray-700 mb-3">
+                    Try these interactive activities based on your dominant mood.
+                </p>
+                
+                <button onclick="startGame('emoji')" class="w-full mt-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition">
+                    Face Match Emoji Game
+                </button>
+                <button onclick="startGame('quick-draw')" class="w-full mt-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition">
+                    Quick Draw Stress Buster
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. CONFIGURATION AND INITIALIZATION ---
+        const videoElement = document.getElementById('video-feed');
+        const canvasElement = document.getElementById('output-canvas');
+        const canvasCtx = canvasElement.getContext('2d');
+        const moodDisplay = document.getElementById('mood-display');
+        const gameRecommendation = document.getElementById('game-recommendation');
+        const gameText = document.getElementById('recommendation-text');
+        const startStopBtn = document.getElementById('start-stop-btn');
+        const reportStatus = document.getElementById('report-status');
+        const analysisOutput = document.getElementById('analysis-output');
+        const analyzeBtn = document.getElementById('analyze-btn');
+        
+        // Flask Backend URL
+        const ANALYSIS_ENDPOINT = 'http://127.0.0.1:5000/api/analyze-mood';
+        const PDF_ENDPOINT = 'http://127.0.0.1:5000/api/generate-pdf'; // NEW ENDPOINT
+
+        let currentMood = 'neutral';
+        let detectionRunning = false;
+        let dataLog = []; 
+        let fpsInterval = 1000 / 10; 
+        let lastLogTime = 0;
+
+        // Initialize MediaPipe Face Mesh
+        const faceMesh = new FaceMesh({locateFile: (file) => {
+            return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4/${file}`;
+        }});
+        
+        faceMesh.setOptions({
+            maxNumFaces: 1,
+            refineLandmarks: true,
+            minDetectionConfidence: 0.5,
+            minTrackingConfidence: 0.5
+        });
+
+        // --- 2. MOOD DETECTION LOGIC (Simplified Placeholder) ---
+        
+        function getMoodFromFacialLandmarks(landmarks) {
+            // [Simplified geometric model logic]
+            if (!landmarks || landmarks.length === 0) return 'neutral';
+
+            const mouthTop = landmarks[13];
+            const mouthBottom = landmarks[14];
+            const mouthLeft = landmarks[61];
+            const mouthRight = landmarks[291];
+            const leftEyebrow = landmarks[158];
+            const leftEye = landmarks[144];
+
+            const mouthHeight = Math.abs(mouthTop.y - mouthBottom.y);
+            const mouthWidth = Math.abs(mouthLeft.x - mouthRight.x);
+            
+            const mouthRatio = mouthHeight / (mouthWidth || 1e-6);
+            const browEyeDist = Math.abs(leftEyebrow.y - leftEye.y);
+            const browRatio = browEyeDist / (Math.abs(leftEye.y - mouthTop.y) || 1e-6);
+
+            if (mouthRatio > 0.35) return "surprise";
+            if (mouthRatio > 0.25 && browRatio > 0.15) return "happy";
+            if (mouthRatio < 0.1) return "drowsy";
+            if (mouthRatio < 0.20 && browRatio > 0.18) return "sad";
+            
+            return "neutral";
+        }
+
+        function updateMoodDisplay(mood) {
+            currentMood = mood;
+            
+            moodDisplay.className = 'mood-indicator mt-2';
+            moodDisplay.classList.add(`mood-${mood}`);
+
+            const emojiMap = {
+                'happy': '😀 Happy',
+                'sad': '🙁 Sad/Low',
+                'surprise': '😮 Alert/Engaged',
+                'drowsy': '😴 Drowsy/Tired',
+                'neutral': '😐 Neutral',
+            };
+            moodDisplay.textContent = emojiMap[mood];
+            
+            // Log data (Throttled logging)
+            const now = Date.now();
+            if (now - lastLogTime > fpsInterval) {
+                 dataLog.push({ timestamp: now, expression: mood });
+                 reportStatus.textContent = `Detection Status: Running. Logged ${dataLog.length} samples.`;
+                 lastLogTime = now;
+            }
+            
+            // Recommend games if mood is low
+            if (mood === 'sad' || mood === 'drowsy') {
+                gameRecommendation.classList.remove('bg-yellow-50');
+                gameRecommendation.classList.add('bg-red-50');
+                gameText.innerHTML = "Your mood seems low or tired. **Action Recommended:** Use the Face Match Emoji Game!";
+            } else {
+                 gameRecommendation.classList.add('bg-yellow-50');
+                 gameRecommendation.classList.remove('bg-red-50');
+                 gameText.innerHTML = "Feeling good! Keep the positive energy going.";
+            }
+        }
+
+        faceMesh.onResults((results) => {
+            canvasCtx.save();
+            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+            canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+
+            if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
+                const landmarks = results.multiFaceLandmarks[0];
+                drawConnectors(canvasCtx, landmarks, FACEMESH_TESSELATION, {color: '#C0C0C070', lineWidth: 1});
+                drawConnectors(canvasCtx, landmarks, FACEMESH_CONTOURS, {color: '#3b82f6', lineWidth: 2});
+                
+                const mood = getMoodFromFacialLandmarks(landmarks);
+                updateMoodDisplay(mood);
+            } else {
+                 updateMoodDisplay('neutral'); 
+            }
+
+            canvasCtx.restore();
+        });
+
+        const camera = new Camera(videoElement, {
+            onFrame: async () => {
+                if (detectionRunning) {
+                    await faceMesh.send({image: videoElement});
+                }
+            },
+            width: 480,
+            height: 360
+        });
+
+        // --- 4. CONTROL AND REPORT FUNCTIONS ---
+
+        function toggleDetection() {
+            if (detectionRunning) {
+                detectionRunning = false;
+                camera.stop();
+                startStopBtn.textContent = 'Start Detection';
+                startStopBtn.classList.remove('bg-red-600');
+                startStopBtn.classList.add('bg-indigo-600');
+                videoElement.style.display = 'none';
+                canvasElement.style.display = 'none';
+                moodDisplay.textContent = 'Detection Stopped';
+                reportStatus.textContent = `Detection Status: Stopped. Ready to analyze ${dataLog.length} samples.`;
+            } else {
+                videoElement.style.display = 'block';
+                canvasElement.style.display = 'block';
+                camera.start(); 
+                detectionRunning = true;
+                startStopBtn.textContent = 'Stop Detection';
+                startStopBtn.classList.remove('bg-indigo-600');
+                startStopBtn.classList.add('bg-red-600');
+                reportStatus.textContent = `Detection Status: Starting...`;
+            }
+        }
+
+        async function analyzeData() {
+            if (dataLog.length === 0) {
+                analysisOutput.textContent = "Please run the detection for a few seconds to collect data.";
+                analysisOutput.classList.remove('hidden');
+                return;
+            }
+
+            if (detectionRunning) {
+                toggleDetection(); 
+            }
+            
+            analysisOutput.classList.remove('hidden');
+            analyzeBtn.textContent = 'Processing...';
+            analyzeBtn.disabled = true;
+
+            try {
+                // Step 1: Get Analysis JSON Data
+                const analysisResponse = await fetch(ANALYSIS_ENDPOINT, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ data_log: dataLog })
+                });
+
+                const analysisResult = await analysisResponse.json();
+                
+                if (!analysisResponse.ok || !analysisResult.success) {
+                    analysisOutput.classList.remove('success');
+                    analysisOutput.classList.add('failure');
+                    analysisOutput.textContent = `❌ Server Error: ${analysisResult.error || 'Check server console.'}`;
+                    return;
+                }
+                
+                // Step 2: Request Downloadable PDF Report
+                analysisOutput.textContent = `Analysis complete. Generating PDF report...`;
+                
+                const pdfResponse = await fetch(PDF_ENDPOINT, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    // Send the successfully analyzed data (including pie_chart_data) to the PDF endpoint
+                    body: JSON.stringify({ report_data: analysisResult }) 
+                });
+
+                if (!pdfResponse.ok) {
+                     throw new Error(`PDF generation failed with status: ${pdfResponse.status}`);
+                }
+
+                // Step 3: Trigger Browser Download
+                const blob = await pdfResponse.blob();
+                const downloadUrl = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = downloadUrl;
+                a.download = 'Mysa_Mood_Report.pdf';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                
+                analysisOutput.classList.remove('failure');
+                analysisOutput.classList.add('success');
+                analysisOutput.innerHTML = `<h3>✅ Report Downloaded!</h3><p><strong>Dominant Mood:</strong> ${analysisResult.dominant_mood}</p><p><strong>Report Message:</strong> ${analysisResult.report_message}</p><p class="text-xs mt-2 text-gray-500">File 'Mysa_Mood_Report.pdf' downloaded.</p>`;
+                
+            } catch (error) {
+                analysisOutput.classList.remove('success');
+                analysisOutput.classList.add('failure');
+                analysisOutput.textContent = `❌ Error: ${error.message}. Ensure mood_analysis.py is running.`;
+                console.error("Analysis Fetch Error:", error);
+            } finally {
+                dataLog = [];
+                analyzeBtn.textContent = 'Generate & Download Report (PDF)';
+                analyzeBtn.disabled = false;
+                reportStatus.textContent = `Detection Status: Stopped. Log cleared.`;
+            }
+        }
+        
+        function startGame(gameType) {
+            alert(`🚀 Starting ${gameType === 'emoji' ? 'Face Match Emoji Game' : 'Quick Draw Stress Buster'}...\n\n(This would load your game page.)`);
+        }
+
+        // Initialize video feed dimensions
+        window.onload = () => {
+             const trackerBox = document.querySelector('.tracker-box');
+             const width = trackerBox.offsetWidth;
+             const height = width * (3 / 4); 
+             videoElement.width = width;
+             videoElement.height = height;
+             canvasElement.width = width;
+             canvasElement.height = height;
+             videoElement.style.display = 'none';
+             canvasElement.style.display = 'none';
+        };
+        
+        // Final script load to ensure Camera class is available
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1640029074/camera_utils.js';
+        document.head.appendChild(script);
+        
+    </script>
+</body>
+</html>

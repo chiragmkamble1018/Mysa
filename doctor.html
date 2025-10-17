@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find & Book a Therapist - Real-Time Gemini Demo</title>
+    
+    <style>
+        /* ************************************ */
+        /* *********** CSS STYLES ************* */
+        /* ************************************ */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f6f9;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        header {
+            width: 100%;
+            background-color: #5c6bc0; /* Primary Color */
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1000px;
+            padding: 20px;
+        }
+
+        /* --- Search Bar & Top Recs --- */
+        .search-area {
+            background-color: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+            margin-bottom: 30px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .search-area input, .search-area select {
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            flex-grow: 1;
+            font-size: 16px;
+        }
+        
+        .search-area button {
+            padding: 12px 25px;
+            background-color: #66bb6a; /* Green for action */
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+
+        .search-area button:hover {
+            background-color: #5cb85f;
+        }
+        
+        /* --- Recommendation List & Loading --- */
+        #recommendation-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            min-height: 200px; 
+        }
+
+        .provider-card {
+            background-color: white;
+            border-left: 5px solid #5c6bc0; /* Accent color */
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+            position: relative;
+        }
+        
+        .provider-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+        }
+
+        .provider-card h3 {
+            margin-top: 0;
+            color: #3f51b5;
+            font-size: 1.4em;
+        }
+
+        .provider-card p {
+            margin: 5px 0;
+            font-size: 0.95em;
+        }
+        
+        .specialty {
+            display: inline-block;
+            background-color: #e8eaf6;
+            color: #5c6bc0;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        /* Style for the Booking Button */
+        .book-btn {
+            background-color: #ff9800; /* Orange for booking */
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 15px;
+            width: 100%;
+            font-size: 1em;
+            transition: background-color 0.3s;
+        }
+        
+        .book-btn:hover {
+            background-color: #fb8c00;
+        }
+
+        /* Style for the new View Location Button */
+        .view-location-btn {
+            background-color: #3f51b5; /* Blue for Maps/Location */
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+            width: 100%;
+            font-size: 1em;
+            transition: background-color 0.3s;
+        }
+
+        .view-location-btn:hover {
+            background-color: #3949ab;
+        }
+        
+        /* Loading Spinner */
+        .loading {
+            grid-column: 1 / -1; 
+            text-align: center;
+            padding: 50px;
+            font-size: 1.1em;
+            color: #5c6bc0;
+        }
+        .loading::after {
+            content: '...';
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { content: '.'; }
+            33% { content: '..'; }
+            66% { content: '...'; }
+        }
+
+        /* --- Modal (Booking Form) Styles --- */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: none; 
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 450px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            color: #aaa;
+        }
+        
+        .modal-content label {
+            display: block;
+            margin-top: 15px;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        .modal-content input[type="date"], 
+        .modal-content input[type="time"],
+        .modal-content input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .modal-content button[type="submit"] {
+            background-color: #5c6bc0;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 25px;
+            width: 100%;
+            font-size: 1.1em;
+        }
+        
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Find Your Mental Health Professional</h1>
+        <p>Search trusted Doctors and Therapists near you. (Data is AI-Generated/Fictional)</p>
+    </header>
+
+    <div class="container">
+        <div class="search-area">
+            <input type="text" id="location-input" placeholder="Enter Location (e.g., New York, London)">
+            <select id="specialty-select">
+                <option value="">Any Specialty</option>
+                <option value="Psychiatrist">Psychiatrist (MD)</option>
+                <option value="Psychologist">Clinical Psychologist</option>
+                <option value="Therapist">Therapist/Counselor</option>
+            </select>
+            <button onclick="searchProviders()">Search</button>
+        </div>
+
+        <h2>Top Recommendations in <span id="current-location">...</span></h2>
+        <div id="recommendation-list">
+            <p class="loading">Searching and generating top recommendations...</p>
+        </div>
+    </div>
+
+    <div id="booking-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal()">×</span>
+            <h2>Book Appointment</h2>
+            <p>You are booking an appointment with: <strong id="modal-provider-name"></strong></p>
+            
+            <form id="booking-form">
+                <input type="hidden" id="provider-id-field" name="provider_id">
+
+                <label for="date-input">Preferred Date:</label>
+                <input type="date" id="date-input" name="date" required>
+                
+                <label for="time-input">Preferred Time:</label>
+                <input type="time" id="time-input" name="time" required>
+                
+                <label for="name-input">Your Full Name:</label>
+                <input type="text" id="name-input" name="name" required placeholder="John Doe">
+                
+                <label for="phone-input">Contact Phone:</label>
+                <input type="text" id="phone-input" name="phone" required placeholder="+1 555-123-4567">
+                
+                <button type="submit">Confirm Booking Request</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // CRITICAL STEP: Replace the placeholder key with your actual Gemini API key
+        const GEMINI_API_KEY = "AIzaSyDZwzU5vmvaVT6LhDHWlsTyyDRHxrw9R8E"; 
+        const GEMINI_ENDPOINT = "https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=";
+        const PROVIDER_COUNT = 5; 
+        
+        // --- Core Functions ---
+
+        /**
+         * 1. Constructs a detailed prompt for Gemini based on user search.
+         * 2. Calls the Gemini API to get a JSON list of mock providers.
+         * 3. Calls displayProviders to render the results.
+         */
+        async function searchProviders() {
+            const location = document.getElementById('location-input').value.trim() || "San Francisco";
+            const specialty = document.getElementById('specialty-select').value;
+            const listContainer = document.getElementById('recommendation-list');
+            const currentLocationSpan = document.getElementById('current-location');
+            
+            currentLocationSpan.textContent = location;
+            listContainer.innerHTML = '<p class="loading">Searching and generating top recommendations...</p>';
+            
+            if (!GEMINI_API_KEY || GEMINI_API_KEY === "") {
+                listContainer.innerHTML = '<p style="grid-column: 1 / -1; text-align: center; color: red;">ERROR: Gemini API Key is missing.</p>';
+                return;
+            }
+
+            // PROMPT: Ensures a realistic, full street address is generated for map functionality.
+            const prompt = `You are a data generator for a mental health website. Generate a JSON array of exactly ${PROVIDER_COUNT} fictional top-rated mental health providers located in "${location}". 
+            If a specialty of "${specialty}" is provided, prioritize it. Each object must have fields: "id" (unique number), "name" (Dr. or Ms./Mr. full name), "specialty" (e.g., Psychiatrist, Therapist), "location" (MUST be a realistic, full street address including street number, city, and zip code, e.g., "100 Broadway, New York, NY 10005" to ensure a map location is found), "rating" (4.5 to 5.0), and "experience" (in years). 
+            Provide ONLY the raw JSON array. DO NOT include any introductory or concluding text, markdown, or code fences (e.g., \`\`\`).`;
+            
+            try {
+                const response = await fetch(GEMINI_ENDPOINT + GEMINI_API_KEY, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ role: "user", parts: [{ text: prompt }] }],
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(`API Error: ${response.status} - ${result.error?.message || 'Unknown server error'}`);
+                }
+
+                if (!result.candidates || result.candidates.length === 0) {
+                    throw new Error("Gemini returned no candidates.");
+                }
+
+                const jsonText = result.candidates[0].content.parts[0].text;
+                
+                // Clean the output
+                const cleanedJsonText = jsonText.replace(/```json|```/g, '').trim();
+                
+                const providers = JSON.parse(cleanedJsonText);
+                displayProviders(providers);
+
+            } catch (error) {
+                console.error("API or JSON Parsing Failed:", error);
+                
+                let errorMessage = "An error occurred. Check your API Key's permissions or browser console. Make sure you are not exceeding usage limits.";
+                if (error.message.includes("Failed to fetch")) {
+                    errorMessage = "Network/CORS Error: If running locally, your browser might be blocking the API request. For production, use a secure back-end proxy.";
+                }
+
+                listContainer.innerHTML = `<p class="loading" style="grid-column: 1 / -1; color: red; font-weight: bold; text-align: left;">
+                    ❌ Request Failed: ${errorMessage}
+                    <br> *Details:* ${error.message}
+                </p>`;
+            }
+        }
+
+        /**
+         * Renders the provider cards on the webpage.
+         */
+        function displayProviders(providers) {
+            const listContainer = document.getElementById('recommendation-list');
+            listContainer.innerHTML = '';
+
+            if (!Array.isArray(providers) || providers.length === 0) {
+                listContainer.innerHTML = '<p style="grid-column: 1 / -1; text-align: center; padding: 30px;">Gemini could not generate provider data. Try a simpler search.</p>';
+                return;
+            }
+
+            providers.forEach(provider => {
+                const card = document.createElement('div');
+                card.className = 'provider-card';
+                
+                // Escape single quotes in the location string
+                const safeLocation = (provider.location || "4401 21st St, Queens, NY 11101").replace(/'/g, "\\'");
+                
+                card.innerHTML = `
+                    <h3>${provider.name || "Unknown Provider"}</h3>
+                    <span class="specialty">${provider.specialty || "N/A"}</span>
+                    <p><strong>Location:</strong> ${provider.location || "Online"}</p>
+                    <p><strong>Rating:</strong> ${provider.rating || "4.5"} ⭐</p>
+                    <p><strong>Experience:</strong> ${provider.experience || "5 years"}</p>
+                    
+                    <button class="book-btn" onclick="openModal('${provider.name || "Unknown Provider"}', ${provider.id || 999})">Book Appointment</button>
+                    
+                    <button class="view-location-btn" onclick="viewLocationOnMap('${safeLocation}')">View Location on Map</button>
+                `;
+                listContainer.appendChild(card);
+            });
+        }
+        
+        /**
+         * Opens Google Maps in a new tab to search for the generated location.
+         */
+        function viewLocationOnMap(location) {
+            // Encode the location string for safe URL insertion
+            const encodedLocation = encodeURIComponent(location);
+            
+            // Construct the standard Google Maps search URL
+            const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodedLocation}`;
+            
+            // Open the URL in a new tab
+            window.open(mapUrl, '_blank');
+        }
+
+
+        // --- Modal and Booking Logic ---
+
+        function openModal(name, id) {
+            document.getElementById('modal-provider-name').textContent = name;
+            document.getElementById('provider-id-field').value = id;
+            document.getElementById('booking-modal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('booking-modal').style.display = 'none';
+        }
+
+        document.getElementById('booking-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            
+            const providerName = document.getElementById('modal-provider-name').textContent;
+            const date = document.getElementById('date-input').value;
+            const time = document.getElementById('time-input').value;
+            
+            alert(`✅ Mock Booking Success!
+                \nProfessional: ${providerName}
+                \nDate/Time: ${date} at ${time}
+                \n
+                \nNOTE: This is a front-end demo. A real booking requires a secure, specialized back-end system.
+            `);
+            
+            closeModal();
+            document.getElementById('booking-form').reset();
+        });
+
+        // Initialize with a default search on load
+        window.onload = () => {
+            document.getElementById('location-input').value = "New York, NY";
+            searchProviders(); 
+        };
+        
+    </script>
+</body>
+</html>

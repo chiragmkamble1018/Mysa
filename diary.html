@@ -34,6 +34,48 @@
     </style>
 </head>
 <body>
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full bg-white/80 backdrop-blur-md z-50 border-b border-gray-200/50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 bg-gradient-to-r from-deep-lilac to-mint-green rounded-full flex items-center justify-center">
+                        <i class="fas fa-heart text-white text-sm"></i>
+                    </div>
+                    <span class="text-xl font-semibold text-gray-800">Mysa</span>
+                </div>
+                <div class="hidden md:flex space-x-8 items-center">
+                    <a href="index.html" class="text-sage-gray hover:text-deep-lilac transition-colors">Home</a>
+
+                    <!-- Games Dropdown -->
+                    <div class="relative group">
+                        <button class="flex items-center text-sage-gray hover:text-deep-lilac transition-colors focus:outline-none">
+                            <span>Games</span>
+                            <i class="fas fa-caret-down ml-2 text-sm"></i>
+                        </button>
+                        <div class="absolute left-0 mt-2 w-56 bg-white rounded-lg shadow-lg opacity-0 group-hover:opacity-100 invisible group-hover:visible transform scale-95 group-hover:scale-100 transition-all duration-150 origin-top">
+                            <ul class="py-2">
+                                <li><a href="games/breathing_game.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Breathing Game</a></li>
+                                <li><a href="games/calm_path_librinth.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Calm Path Labyrinth</a></li>
+                                <li><a href="games/rain_soundscape.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Rain Soundscape</a></li>
+                                <li><a href="games/satisfying_pop_game.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Satisfying Pop Game</a></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <a href="#about" class="text-sage-gray hover:text-deep-lilac transition-colors">About</a>
+                    <a href="#features" class="text-sage-gray hover:text-deep-lilac transition-colors">Features</a>
+                    <a href="#resources" class="text-sage-gray hover:text-deep-lilac transition-colors">Resources</a>
+                    <!-- Authentication Link is Dynamic -->
+                    <a href="login.html" class="text-sage-gray hover:text-deep-lilac transition-colors" id="nav-auth-link">Login/Signup</a>
+                </div>
+                
+                <button class="md:hidden">
+                    <i class="fas fa-bars text-gray-600"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
     <div id="app" class="p-4 md:p-8 min-h-screen">
         <!-- HEADER WITH DYNAMIC TITLE AND SETTINGS BUTTON -->
         <h1 class="text-4xl font-bold text-indigo-600 text-center mb-8 flex items-center justify-center space-x-3">

@@ -101,9 +101,12 @@
             0%, 100% { transform: translateY(0px); }
             50% { transform: translateY(-10px); }
         }
+        
+        /* Removed .listening-pulse CSS as the button is gone */
     </style>
 </head>
 <body class="font-poppins bg-soft-cream min-h-full">
+    <!-- Navigation -->
     <!-- Navigation -->
     <nav class="fixed top-0 w-full bg-white/80 backdrop-blur-md z-50 border-b border-gray-200/50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -132,7 +135,7 @@
                             </ul>
                         </div>
                     </div>
-
+                    <a href="mood_tracker.html" class="text-sage-gray hover:text-deep-lilac transition-colors">Mood Tracking</a>
                     <a href="#about" class="text-sage-gray hover:text-deep-lilac transition-colors">About</a>
                     <a href="#features" class="text-sage-gray hover:text-deep-lilac transition-colors">Features</a>
                     <a href="#resources" class="text-sage-gray hover:text-deep-lilac transition-colors">Resources</a>
@@ -158,7 +161,7 @@
                 </div>
                 <h1 class="text-4xl md:text-6xl font-bold text-charcoal-gray mb-6 leading-tight">
                     Your AI Mental Health
-                    <span class="">
+                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-deep-lilac to-mint-green">
                         Companion
                     </span>
                 </h1>
@@ -302,7 +305,7 @@
                     </div>
                 </div>
                 
-                <div class="p-6 space-y-4 h-80 overflow-y-auto">
+                <div class="p-6 space-y-4 h-80 overflow-y-auto" id="chat-preview-container">
                     <div class="chat-bubble">
                         <div class="flex items-start space-x-3">
                             <div class="w-8 h-8 bg-gradient-to-r from-deep-lilac to-mint-green rounded-full flex items-center justify-center flex-shrink-0 shadow-sm">
@@ -526,11 +529,10 @@
                 <div>
                     <h4 class="font-semibold mb-4">Quick Links</h4>
                     <ul class="space-y-2 text-gray-300">
-                        <li><a href="diary.html" class="hover:text-lavender-mist transition-colors">My Diary</a></li>
                         <li><a href="#about" class="hover:text-lavender-mist transition-colors">About Mysa</a></li>
                         <li><a href="#features" class="hover:text-lavender-mist transition-colors">Features</a></li>
                         <li><a href="#resources" class="hover:text-lavender-mist transition-colors">Resources</a></li>
-                        <li><a href="" class="hover:text-lavender-mist transition-colors">Privacy Policy</a></li>
+                        <li><a href="#" class="hover:text-lavender-mist transition-colors">Privacy Policy</a></li>
                         <li><a href="#" class="hover:text-lavender-mist transition-colors">Terms of Service</a></li>
                     </ul>
                 </div>
@@ -569,12 +571,12 @@
         // This must match the config used in register.html and chatbot.html
         const FIREBASE_CONFIG = {
             apiKey: "AIzaSyD73N_2NxY4_VQhy89khGKIgPVWuhSHw3Q",
-  authDomain: "mysa-77a83.firebaseapp.com",
-  projectId: "mysa-77a83",
-  storageBucket: "mysa-77a83.firebasestorage.app",
-  messagingSenderId: "199990845419",
-  appId: "1:199990845419:web:2f7feaee3c05854a4303ae",
-  measurementId: "G-0CE4KL8XE0"
+            authDomain: "mysa-77a83.firebaseapp.com",
+            projectId: "mysa-77a83",
+            storageBucket: "mysa-77a83.firebasestorage.app",
+            messagingSenderId: "199990845419",
+            appId: "1:199990845419:web:2f7feaee3c05854a4303ae",
+            measurementId: "G-0CE4KL8XE0"
         };
         
         const app = initializeApp(FIREBASE_CONFIG);
@@ -612,6 +614,128 @@
         });
 
 
+        // --- NEW: Voice Command Logic (Web Speech API) ---
+        const WAKE_PHRASE = "hey mysa";
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition = null;
+        let isListening = false;
+        let isNavigating = false; // Flag to prevent multiple starts/stops during redirect
+
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = false;
+            recognition.lang = 'en-US';
+            // Set max alternative to 1 to reduce noise
+            recognition.maxAlternatives = 1; 
+
+            // Function to show a permanent user message (non-alert)
+            const showListeningMessage = (message, colorClass) => {
+                const existing = document.getElementById('voice-notification');
+                if (existing) existing.remove();
+                
+                const notification = document.createElement('div');
+                notification.id = 'voice-notification';
+                notification.className = `fixed top-4 right-4 bg-white rounded-lg shadow-xl p-3 z-50 border-l-4 ${colorClass} transition-all duration-300`;
+                notification.innerHTML = `<div class="flex items-center space-x-2"><i class="fas fa-microphone text-deep-lilac"></i><p class="text-charcoal-gray font-medium">${message}</p></div>`;
+                document.body.appendChild(notification);
+                
+                // Keep permanent notification for listening status, remove success/error messages after a delay
+                if (colorClass !== 'border-deep-lilac') {
+                    setTimeout(() => {
+                        document.getElementById('voice-notification')?.remove();
+                        // Re-show the 'always listening' message after a success/error notification fades
+                        if (isListening && !isNavigating) {
+                            startListeningFeedback(); 
+                        }
+                    }, 4000);
+                }
+            };
+
+            // Visual feedback for start listening (just the notification remains)
+            const startListeningFeedback = () => {
+                if (!isNavigating) {
+                    showListeningMessage("Always Listening for \"Hey Mysa\"", 'border-deep-lilac');
+                }
+            };
+            
+            // Event handler for voice results
+            recognition.onresult = function(event) {
+                // Get the final transcript
+                const transcript = event.results[event.results.length - 1][0].transcript.toLowerCase().trim();
+                console.log('Voice Command Heard:', transcript);
+
+                if (transcript.includes(WAKE_PHRASE) && !isNavigating) {
+                    // WAKE WORD DETECTED
+                    isNavigating = true;
+                    
+                    // Stop listening cleanly
+                    recognition.stop();
+                    isListening = false;
+                    document.getElementById('voice-notification')?.remove();
+
+                    showListeningMessage("✅ Command recognized! Launching Mysa Chat...", 'border-mint-green');
+                    
+                    // Launch the chatbot after a short delay for feedback display
+                    setTimeout(() => {
+                        const currentUser = auth.currentUser;
+                        // Determine the correct page to navigate to
+                        const targetUrl = (currentUser && !currentUser.isAnonymous) ? 'chatbot.html' : 'login.html';
+                        window.location.href = targetUrl;
+                    }, 1000);
+                }
+            };
+
+            // Handles the end of a recognition session (RESTARTS AUTOMATICALLY)
+            recognition.onend = () => {
+                console.log('Recognition ended. Restarting if needed.');
+                if (isListening && !isNavigating) {
+                    // Only attempt to restart if we weren't already navigating away
+                    try {
+                        recognition.start();
+                        startListeningFeedback(); 
+                    } catch (e) {
+                        console.warn("Recognition restart failed (API limitation):", e);
+                    }
+                }
+            };
+            
+            // Handles errors, especially if the user denies microphone permission
+            recognition.onerror = (event) => {
+                if (event.error !== 'no-speech') {
+                    console.error('Speech recognition error:', event.error);
+                    isListening = false;
+                    let message = "❌ Voice command failed. Please check your microphone permissions.";
+                    if (event.error === 'not-allowed') {
+                        message = "❌ Microphone access denied. Voice feature disabled.";
+                    }
+                    // Stop attempting to listen if there is a critical error
+                    if (recognition.stop) { recognition.stop(); }
+                    showListeningMessage(message, 'border-peach-blush');
+                }
+            };
+
+            // --- AUTO START LISTENING ON LOAD ---
+            window.addEventListener('load', () => {
+                // Request microphone permission on page load
+                navigator.mediaDevices.getUserMedia({ audio: true })
+                    .then(stream => {
+                        // Permission granted, start recognition
+                        stream.getTracks().forEach(track => track.stop()); // Stop stream immediately
+                        recognition.start();
+                        isListening = true;
+                        startListeningFeedback(); 
+                    })
+                    .catch(err => {
+                        // Permission denied
+                        console.error("Microphone permission denied:", err);
+                        showListeningMessage("❌ Microphone access denied. Voice feature disabled.", 'border-peach-blush');
+                    });
+            });
+            
+        } 
+        
         // --- Existing Interactive Logic (Non-Firebase) ---
 
         // Fade in animation on scroll
@@ -649,7 +773,7 @@
 
         // Interactive chat simulation (for preview)
         const chatInput = document.querySelector('input[placeholder="Type your message..."]');
-        const chatContainer = document.querySelector('.space-y-4');
+        const chatContainer = document.getElementById('chat-preview-container');
         
         if (chatInput) {
             chatInput.addEventListener('keypress', function(e) {
